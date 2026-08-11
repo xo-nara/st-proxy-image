@@ -65,6 +65,8 @@ Sampling method, Scheduler, Steps, CFG scale, Seed, Upscale, Variety boost, Decr
 
 ## Context Budget
 จำกัดข้อความล่าสุด / ตัวอักษรต่อข้อความ / เพดานรวม, ตัด HTML + UI module block + code block ออกก่อนส่ง
+ค่าแนะนำ: ข้อความล่าสุด **3-8** (4) • ตัด/ข้อความ **300-1200** (600) • เพดานรวม **1000-10000** (4000)
+ช่อง "ตัด/ข้อความ" คูณ 3 = ความยาวสูงสุดของข้อความล่าสุด และหน้าตั้งค่ามีบรรทัดคำนวณสด ๆ พร้อมเตือนเมื่อค่าต่ำ/สูงเกินไปหรือ Max tokens ของ Connection 1 น้อยจน prompt ถูกตัดกลางคัน
 ปุ่ม **Preview** ดู payload จริงของ Connection 1 พร้อมนับ token
 
 ## เมื่อเกิดปัญหา

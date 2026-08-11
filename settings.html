@@ -145,6 +145,15 @@
                             <input id="pxi_ctx_total" class="text_pole" type="number" min="200" max="20000" step="100">
                         </div>
                     </div>
+                    <div class="pxi-note">
+                        <b>ค่าที่แนะนำ</b><br>
+                        ข้อความล่าสุด <b>3-8</b> (ค่าแนะนำ 4) • ตัด/ข้อความ <b>300-1200</b> (ค่าแนะนำ 600) • เพดานรวม <b>1000-10000</b> (ค่าแนะนำ 4000)<br>
+                        ช่อง "ตัด/ข้อความ" คูณ 3 คือความยาวสูงสุดของข้อความล่าสุด เช่น 600 = ข้อความล่าสุดได้ 1800 ตัวอักษร<br>
+                        ฉากที่มีตัวละครหลายตัวให้เพิ่ม "ตัด/ข้อความ" เป็น 800-1000 และ Max tokens ของ Connection 1 เป็น 500-600 ไม่งั้น prompt จะถูกตัดกลางคัน<br>
+                        ถ้าตั้งสูงเกินจน Connection 1 ไม่ยอมตอบหรือช้ามาก ให้ลดเพดานรวมลงก่อนเป็นอย่างแรก
+                    </div>
+                    <div id="pxi_ctx_hint" class="pxi-note"></div>
+
                     <label class="checkbox_label" for="pxi_strip_html">
                         <input id="pxi_strip_html" type="checkbox">
                         <span>ตัด HTML / UI module block / code block</span>

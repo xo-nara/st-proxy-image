@@ -27,6 +27,8 @@ const HEIGHT_RULE = `Heights and eye lines - the model flattens everyone to the 
 
 const STYLE_TAIL = `=== STYLE TAIL - ALWAYS END THE PROMPT WITH THIS ===\nAfter every character group and every scene tag, close the prompt with a style tail in this order:\n1. Franchise art style - when the cast comes from a work with a distinctive house style, name it as an official-art tag: "genshin impact", "arknights", "project sekai", "honkai: star rail", "blue archive", "wuthering waves", "zenless zone zero", "hololive", "fate/grand order", "nikke", "azur lane". Add "official art" next to it when the look matches promotional art. Repeating the series tag here is deliberate - it steers the rendering style, so write it both in the character group and here. Two characters from different works: name both series, or drop this line rather than blending them badly. Original characters with no franchise: skip this line.\n2. Rendering style - one or two tags that match the source's look, chosen from: "anime coloring", "cel shading", "soft shading", "painterly", "detailed background", "game cg", "official art", "gradient hair", "glowing eyes", "sparkle", "depth of field", "bloom", "rim light", "cinematic lighting".\n3. Quality tail - always exactly this, always last: "masterpiece, very aesthetic, absurdres, best quality"\nNever place the style tail in the middle of the prompt and never put it inside a character group. It belongs after everything else, as the final tags of the output.`;
 
+const BACKGROUND_RULE = `Background - never fall back to an empty studio backdrop:\n- The background MUST be the place the character is in according to the latest message: the room, the furniture and objects around them, the time of day, the weather, the light source. Name them as tags: "bedroom, indoors, night, unmade bed, curtains, lamplight" rather than "simple background".\n- Do not write "simple background", "white background", "grey background", "gradient background" or "transparent background" unless the message really puts the character against a blank wall or void.\n- If the model still tends to flatten it, push back with "-1::simple background ::" and add "location" so it commits to a real place.\n- Only when the message gives no location at all, infer the most likely place from the scene that came before it, and only if that fails choose a plain but real setting such as "indoors, wooden wall, window light".\n- Depth tags are welcome: "depth of field", "blurry background", "bokeh" keep the focus on the character while the place still reads.`;
+
 const RATING_RULE = `Rating: prepend "rating:general" for a safe scene, "rating:sensitive" for suggestive, "rating:explicit" for an adult scene. Adult content only for characters who are adults; if a character reads as young, do not write an adult scene for them regardless of what the text says.`;
 
 const ORDER_RULE = 'Tag order: subject count tags first, then character identity and appearance, then clothing, then expression and pose, then action, then camera framing, then setting, background, lighting and mood. Pick exactly one framing tag - never combine conflicting ones such as full body and close-up.';
@@ -42,15 +44,15 @@ const DEFAULT_TEMPLATES = {
     },
     portrait: {
         label: 'Portrait (ตัวละคร)',
-        sys: `You write image prompts for NovelAI Diffusion V4.5 (anime model).\nWrite ONE solo portrait prompt of the CHARACTER as they appear in the latest message.\n\nSource priority:\n- The latest message is the PRIMARY source. Take the outfit worn right now, hair up or down, wet, dirty or damaged states, expression, gaze, pose, and the place they are in from it.\n- The character sheet is the FALLBACK for fixed traits only: gender, build, height, hair colour and length, eye colour, permanent marks. Use it whenever the scene does not mention something.\n- When the two conflict on anything temporary (clothes, hairstyle, mood, location), the latest message wins.\n- If the scene gives no clothing or no place, fall back to the sheet and pick a neutral background instead of inventing a striking one.\n\nStart with the count tag (1girl / 1boy / 1other) and solo, then the identity tags, then hair, eyes, height and build, distinctive features, the current outfit, expression and gaze, pose, framing (upper body or cowboy shot), background, lighting.\n\n${IDENTITY_RULE} A costume variant tag may be used only when the scene actually describes that outfit.\n\nGive the character an absolute build tag such as "tall", "petite" or "slender" - without one the model draws an average build.\n\n${ORDER_RULE}\n${RENAMED_RULE}\n${DENSITY_RULE}\n${RATING_RULE}\n\n${STYLE_TAIL}\n\nDraw only this one character and only what the moment shows: no second person, no past events, no dialogue text. Do not use source#, target# or mutual# tags.\n25-40 tags.\n${NAI_RULES}`,
+        sys: `You write image prompts for NovelAI Diffusion V4.5 (anime model).\nWrite ONE solo portrait prompt of the CHARACTER as they appear in the latest message.\n\nSource priority:\n- The latest message is the PRIMARY source. Take the outfit worn right now, hair up or down, wet, dirty or damaged states, expression, gaze, pose, and the place they are in from it.\n- The character sheet is the FALLBACK for fixed traits only: gender, build, height, hair colour and length, eye colour, permanent marks. Use it whenever the scene does not mention something.\n- When the two conflict on anything temporary (clothes, hairstyle, mood, location), the latest message wins.\n- If the scene gives no clothing, fall back to the sheet.\n\nStart with the count tag (1girl / 1boy / 1other) and solo, then the identity tags, then hair, eyes, height and build, distinctive features, the current outfit, expression and gaze, pose, framing (upper body or cowboy shot), background, lighting.\n\n${IDENTITY_RULE} A costume variant tag may be used only when the scene actually describes that outfit.\n\n${BACKGROUND_RULE}\n\nGive the character an absolute build tag such as "tall", "petite" or "slender" - without one the model draws an average build.\n\n${ORDER_RULE}\n${RENAMED_RULE}\n${DENSITY_RULE}\n${RATING_RULE}\n\n${STYLE_TAIL}\n\nDraw only this one character and only what the moment shows: no second person, no past events, no dialogue text. Do not use source#, target# or mutual# tags.\n25-40 tags.\n${NAI_RULES}`,
     },
     selfie: {
         label: 'Selfie (โคลสอัพหน้า {{char}})',
-        sys: `You write image prompts for NovelAI Diffusion V4.5 (anime model).\nWrite ONE close-up face shot of the CHARACTER, as if it were a selfie taken right now.\nAlways include, in this order:\n1. Count tag (1girl / 1boy / 1other), solo, then the character identity tags.\n2. Framing that keeps it head-to-neck: portrait, close-up, face focus. Never add tags for torso, hands, legs, breasts or full body.\n3. Face detail: hair colour and style around the face, hair ornaments, eye colour, blush, sweat or tears if present.\n4. Expression from the current scene plus gaze direction (looking at viewer / looking away).\n5. Collar-level clothing only: shirt collar, choker, scarf and the like.\n6. Background of the place they are in right now, plus lighting, and depth of field or blurry background.\n\n${IDENTITY_RULE}\n${RENAMED_RULE}\n${DENSITY_RULE}\nPut the face emphasis to work, for example "1.2::face focus, looking at viewer ::" and weaken the background with something like "0.8::blurry background ::".\n${RATING_RULE}\n\n${STYLE_TAIL}\n\n20-32 tags.\nDo not use source#, target# or mutual# tags: this is a solo close-up.\n${NAI_RULES}`,
+        sys: `You write image prompts for NovelAI Diffusion V4.5 (anime model).\nWrite ONE close-up face shot of the CHARACTER, as if it were a selfie taken right now.\nAlways include, in this order:\n1. Count tag (1girl / 1boy / 1other), solo, then the character identity tags.\n2. Framing that keeps it head-to-neck: portrait, close-up, face focus. Never add tags for torso, hands, legs, breasts or full body.\n3. Face detail: hair colour and style around the face, hair ornaments, eye colour, blush, sweat or tears if present.\n4. Expression from the current scene plus gaze direction (looking at viewer / looking away).\n5. Collar-level clothing only: shirt collar, choker, scarf and the like.\n6. Background of the place they are in right now, plus lighting, and depth of field or blurry background.\n\n${BACKGROUND_RULE}\n\n${IDENTITY_RULE}\n${RENAMED_RULE}\n${DENSITY_RULE}\nPut the face emphasis to work, for example "1.2::face focus, looking at viewer ::" and weaken the background with something like "0.8::blurry background ::".\n${RATING_RULE}\n\n${STYLE_TAIL}\n\n20-32 tags.\nDo not use source#, target# or mutual# tags: this is a solo close-up.\n${NAI_RULES}`,
     },
     user: {
         label: 'User (ตัวละครฝั่งผู้ใช้)',
-        sys: `You write image prompts for NovelAI Diffusion V4.5 (anime model).\nWrite ONE solo prompt of the USER's character as they are in the latest message.\n\nTwo sources are given and they have different jobs:\n- The persona block holds the FIXED traits: gender, body type, height, build, hair colour and length, eye colour, permanent marks. Take these from the persona unless the scene explicitly changed them.\n- The latest message holds the CURRENT state and it decides everything temporary. Read it for: what they are wearing right now, hair put up or let down, wet, dirty or damaged states, expression and gaze, POSTURE AND POSE (standing, sitting, kneeling, lying, leaning, walking, arms crossed, hands behind back, what they are holding or touching), and the PLACE they are in with its furniture, time of day, weather and lighting. When the scene contradicts the persona on something temporary, the scene wins.\n- Take the pose and the background from the character's FINAL position in the message, not where they started.\n- Only when the latest message says nothing about clothing, pose or place, fall back to the persona and pick a neutral pose and setting.\n\nSolo image: draw only the user's character. If the other character is touching them in the scene, keep the effect on the user's own body - a blush, dishevelled clothes, an outstretched arm - but do not draw the second person and do not use source#, target# or mutual# tags.\n\nStart with the count tag (1girl / 1boy / 1other) and solo, then identity and appearance, then height and build, clothing, expression and gaze, posture and pose, framing (upper body or cowboy shot; use full body when the pose is the point), background, lighting.\n${IDENTITY_RULE}\n\nGive the character an absolute build tag such as "tall", "petite" or "slender" - without one the model draws an average build.\n\n${ORDER_RULE}\n${RENAMED_RULE}\n${DENSITY_RULE}\n${RATING_RULE}\n\n${STYLE_TAIL}\nMatch the franchise style to the world the scene takes place in, so the user's character sits in the same art style as the character they are with.\n\n25-40 tags.\n${NAI_RULES}`,
+        sys: `You write image prompts for NovelAI Diffusion V4.5 (anime model).\nWrite ONE solo prompt of the USER's character as they are in the latest message.\n\nTwo sources are given and they have different jobs:\n- The persona block holds the FIXED traits: gender, body type, height, build, hair colour and length, eye colour, permanent marks. Take these from the persona unless the scene explicitly changed them.\n- The latest message holds the CURRENT state and it decides everything temporary. Read it for: what they are wearing right now, hair put up or let down, wet, dirty or damaged states, expression and gaze, POSTURE AND POSE (standing, sitting, kneeling, lying, leaning, walking, arms crossed, hands behind back, what they are holding or touching), and the PLACE they are in with its furniture, time of day, weather and lighting. When the scene contradicts the persona on something temporary, the scene wins.\n- Take the pose and the background from the character's FINAL position in the message, not where they started.\n- Only when the latest message says nothing about clothing or pose, fall back to the persona and pick a neutral pose.\n\n${BACKGROUND_RULE}\n\nSolo image: draw only the user's character. If the other character is touching them in the scene, keep the effect on the user's own body - a blush, dishevelled clothes, an outstretched arm - but do not draw the second person and do not use source#, target# or mutual# tags.\n\nStart with the count tag (1girl / 1boy / 1other) and solo, then identity and appearance, then height and build, clothing, expression and gaze, posture and pose, framing (upper body or cowboy shot; use full body when the pose is the point), background, lighting.\n${IDENTITY_RULE}\n\nGive the character an absolute build tag such as "tall", "petite" or "slender" - without one the model draws an average build.\n\n${ORDER_RULE}\n${RENAMED_RULE}\n${DENSITY_RULE}\n${RATING_RULE}\n\n${STYLE_TAIL}\nMatch the franchise style to the world the scene takes place in, so the user's character sits in the same art style as the character they are with.\n\n25-40 tags.\n${NAI_RULES}`,
     },
     last: {
         label: 'Last Message (ฉากล่าสุด)',
@@ -1284,6 +1286,39 @@ function resetTemplate(all = false) {
     notify(all ? 'รีเซ็ตทุก template กลับค่าเริ่มต้นแล้ว' : 'รีเซ็ต template นี้แล้ว', 'success');
 }
 
+function updateContextHints() {
+    const el = document.getElementById('pxi_ctx_hint');
+    if (!el) return;
+    const s = settings();
+    const messages = Math.max(0, Number(s.ctx_messages) || 0);
+    const perMessage = Math.max(50, Number(s.ctx_chars) || 350);
+    const total = Math.max(200, Number(s.ctx_total) || 3000);
+    const lastCap = perMessage * 3;
+    const budget = Math.min(messages * perMessage, total);
+    const tokens = Math.ceil((budget + lastCap + 2600) / 3.6);
+
+    const warnings = [];
+    if (perMessage < 300) warnings.push(`ตัด/ข้อความ ${perMessage} น้อยไป — ข้อความล่าสุดเหลือแค่ ${lastCap} ตัวอักษร ฉากที่มีหลายตัวละครจะถูกตัดหัวทิ้ง แนะนำ 600`);
+    if (perMessage > 1200) warnings.push(`ตัด/ข้อความ ${perMessage} สูงมาก — ข้อความล่าสุดกินไป ${lastCap} ตัวอักษร เสี่ยง Connection 1 ตอบช้าหรือไม่ยอมตอบ แนะนำไม่เกิน 1200`);
+    if (total < 1000) warnings.push('เพดานรวมต่ำกว่า 1000 — ฉากก่อนหน้าจะหายเกือบหมด แนะนำอย่างน้อย 1000');
+    if (total > 10000) warnings.push('เพดานรวมเกิน 10000 — เกินความจำเป็นและเสี่ยงชน context limit ของโปรไฟล์ แนะนำไม่เกิน 10000');
+    if (messages === 0) warnings.push('ข้อความล่าสุด = 0 จะไม่ส่งบทสนทนาไปเลย โหมด Last Message จะเหลือแค่ข้อความเดียว');
+    if (messages > 12) warnings.push(`ข้อความล่าสุด ${messages} เยอะเกินจำเป็น — โหมดเจนรูปใช้แค่ฉากปัจจุบัน แนะนำ 3-8`);
+    if (Number(s.llm_max_tokens) < 200) warnings.push('Max tokens ของ Connection 1 ต่ำกว่า 200 — prompt ที่มีหลายตัวละครจะถูกตัดกลางคัน แนะนำ 350-600');
+
+    el.textContent = '';
+    const summary = document.createElement('div');
+    summary.textContent = `งบจริง ≈ ${budget} ตัวอักษรจากบทสนทนา + ข้อความล่าสุดสูงสุด ${lastCap} ตัวอักษร รวมกับ template แล้วราว ${tokens} tokens`;
+    el.append(summary);
+    for (const warning of warnings) {
+        const line = document.createElement('div');
+        line.className = 'pxi-warn-line';
+        line.textContent = '• ' + warning;
+        el.append(line);
+    }
+    el.classList.toggle('pxi-warn', warnings.length > 0);
+}
+
 function loadSettingsToUi() {
     const s = settings();
     for (const [id, key, type] of BINDINGS) {
@@ -1294,6 +1329,7 @@ function loadSettingsToUi() {
     }
     loadTemplateEditor();
     toggleSourceBlocks();
+    updateContextHints();
 }
 
 function bindEvents() {
@@ -1309,6 +1345,7 @@ function bindEvents() {
             else s[key] = el.value;
             if (key === 'wand_button') updateWandButton();
             if (key === 'c1_source' || key === 'c2_source') toggleSourceBlocks();
+            if (key.startsWith('ctx_') || key === 'llm_max_tokens') updateContextHints();
             context.saveSettingsDebounced();
         });
     }

@@ -222,3 +222,8 @@
     font-size: 0.8em;
     line-height: 1.5;
 }
+
+.pxi-root .pxi-warn-line {
+    margin-top: 3px;
+    color: var(--warning, #ff6b6b);
+}
