@@ -1,0 +1,224 @@
+.pxi-root .pxi-row {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    margin: 5px 0;
+}
+
+.pxi-root .pxi-grow {
+    flex: 1 1 auto;
+    min-width: 0;
+}
+
+.pxi-root .pxi-grid3 {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px;
+    margin: 5px 0;
+}
+
+.pxi-root .pxi-grid3 > div {
+    flex: 1 1 90px;
+    min-width: 0;
+}
+
+.pxi-root label {
+    display: block;
+    margin-top: 6px;
+    font-weight: 600;
+    font-size: 0.9em;
+}
+
+.pxi-root label.checkbox_label {
+    display: flex;
+    font-weight: normal;
+}
+
+.pxi-root .pxi-hint {
+    display: block;
+    opacity: 0.7;
+    font-size: 0.8em;
+    margin-bottom: 3px;
+}
+
+.pxi-root textarea.text_pole {
+    width: 100%;
+    resize: vertical;
+    line-height: 1.35;
+}
+
+.pxi-root .pxi-mono {
+    font-family: var(--monoFontFamily, monospace);
+    font-size: 0.85em;
+}
+
+.pxi-root .pxi-sub {
+    margin: 8px 0;
+    border: 1px solid var(--SmartThemeBorderColor);
+    border-radius: 8px;
+    padding: 4px 8px;
+}
+
+.pxi-root .pxi-status {
+    margin-top: 8px;
+    padding: 5px 8px;
+    border-radius: 6px;
+    font-size: 0.85em;
+    opacity: 0.85;
+    background-color: var(--black30a);
+    word-break: break-word;
+}
+
+.pxi-root .pxi-status.pxi-error {
+    color: var(--warning, #ff6b6b);
+    opacity: 1;
+}
+
+.pxi-preview {
+    max-height: 55vh;
+    overflow: auto;
+    white-space: pre-wrap;
+    word-break: break-word;
+    text-align: left;
+    font-size: 0.85em;
+    background-color: var(--black30a);
+    padding: 8px;
+    border-radius: 6px;
+}
+
+.pxi-root .pxi-hidden,
+.pxi-hidden {
+    display: none !important;
+}
+
+.pxi-root .pxi-wrap {
+    flex-wrap: wrap;
+}
+
+.pxi-root .pxi-credit {
+    margin-top: 10px;
+    text-align: center;
+    font-size: 0.75em;
+    opacity: 0.5;
+}
+
+#pxi_dropdown.pxi-dropdown {
+    position: fixed;
+    top: 0;
+    left: 0;
+    z-index: 30050;
+    display: block;
+    min-width: 180px;
+    max-height: 70vh;
+    overflow-y: auto;
+    padding: 4px;
+    border: 1px solid var(--SmartThemeBorderColor);
+    border-radius: 10px;
+    background-color: var(--SmartThemeBlurTintColor, var(--black70a));
+    -webkit-backdrop-filter: blur(var(--SmartThemeBlurStrength, 10px));
+    backdrop-filter: blur(var(--SmartThemeBlurStrength, 10px));
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+}
+
+#pxi_dropdown.pxi-hidden {
+    display: none !important;
+}
+
+#pxi_dropdown .pxi-dropdown-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 7px 10px;
+    border-radius: 6px;
+    cursor: pointer;
+}
+
+#pxi_dropdown .pxi-dropdown-item:hover {
+    background-color: var(--white20a, rgba(255, 255, 255, 0.15));
+}
+
+.pxi-caret {
+    margin-left: auto;
+    opacity: 0.6;
+    font-size: 0.8em;
+}
+
+.pxi-errbox h3 {
+    margin: 0 0 6px 0;
+}
+
+.pxi-errbox {
+    text-align: left;
+}
+
+.pxi-err-reason {
+    padding: 6px 8px;
+    border-radius: 6px;
+    background-color: var(--black30a);
+    word-break: break-word;
+}
+
+.pxi-err-hints {
+    margin: 8px 0 0 0;
+    padding-left: 20px;
+    font-size: 0.9em;
+    line-height: 1.5;
+}
+
+.pxi-errbox details {
+    margin-top: 8px;
+}
+
+.pxi-errbox summary {
+    cursor: pointer;
+    opacity: 0.75;
+    font-size: 0.85em;
+}
+
+.pxi-root textarea.pxi-locked {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.pxi-root .pxi-inline {
+    display: inline;
+    margin-left: 4px;
+}
+
+.pxi-root .pxi-note {
+    margin: 6px 0;
+    padding: 7px 9px;
+    border-left: 3px solid var(--SmartThemeQuoteColor, #888);
+    border-radius: 4px;
+    background-color: var(--black30a);
+    font-size: 0.8em;
+    line-height: 1.6;
+    opacity: 0.9;
+}
+
+.pxi-root .pxi-docs-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px;
+    margin: 6px 0;
+}
+
+.pxi-root .pxi-doc-button {
+    flex: 1 1 45%;
+    justify-content: flex-start;
+    font-size: 0.85em;
+}
+
+.pxi-root .pxi-note.pxi-warn {
+    border-left-color: var(--warning, #ff6b6b);
+}
+
+.pxi-docbox {
+    text-align: left;
+}
+
+.pxi-doc {
+    max-height: 60vh;
+    font-size: 0.8em;
+    line-height: 1.5;
+}

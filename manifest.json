@@ -1,0 +1,12 @@
+{
+    "display_name": "Proxy Image Gen (NovelAI / OpenAI-Compatible)",
+    "loading_order": 100,
+    "requires": [],
+    "optional": [],
+    "js": "index.js",
+    "css": "style.css",
+    "author": "@xo.nara & Claude",
+    "version": "2.4.1",
+    "homePage": "https://github.com/",
+    "auto_update": false
+}

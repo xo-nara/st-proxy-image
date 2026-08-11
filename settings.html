@@ -1,0 +1,346 @@
+<div id="pxi_settings" class="pxi-root">
+    <div class="inline-drawer">
+        <div class="inline-drawer-toggle inline-drawer-header">
+            <b>Proxy Image Gen</b>
+            <div class="inline-drawer-icon fa-solid fa-circle-chevron-down down"></div>
+        </div>
+        <div class="inline-drawer-content">
+
+            <label class="checkbox_label" for="pxi_enabled">
+                <input id="pxi_enabled" type="checkbox">
+                <span>เปิดใช้งาน Extension</span>
+            </label>
+            <label class="checkbox_label" for="pxi_edit_before">
+                <input id="pxi_edit_before" type="checkbox">
+                <span>ตรวจ/แก้ prompt ก่อนเจน (ระหว่าง Conn.1 → Conn.2)</span>
+            </label>
+            <label class="checkbox_label" for="pxi_swipe_regen">
+                <input id="pxi_swipe_regen" type="checkbox">
+                <span>ปัดขวาที่รูปใบสุดท้าย = ตรวจ prompt แล้วเจนใบใหม่</span>
+            </label>
+
+            <div class="pxi-row pxi-wrap">
+                <div class="menu_button menu_button_icon" id="pxi_run_portrait"><i class="fa-solid fa-user"></i><span>Portrait</span></div>
+                <div class="menu_button menu_button_icon" id="pxi_run_selfie"><i class="fa-solid fa-face-smile"></i><span>Selfie</span></div>
+                <div class="menu_button menu_button_icon" id="pxi_run_user"><i class="fa-solid fa-user-astronaut"></i><span>User</span></div>
+                <div class="menu_button menu_button_icon" id="pxi_run_last"><i class="fa-solid fa-comment-dots"></i><span>Last Message</span></div>
+                <div class="menu_button menu_button_icon" id="pxi_run_free"><i class="fa-solid fa-pen-nib"></i><span>Free</span></div>
+                <div class="menu_button menu_button_icon" id="pxi_preview"><i class="fa-solid fa-eye"></i><span>Preview</span></div>
+            </div>
+
+            <hr class="sysHR">
+
+            <!-- ============ CONNECTION 1 ============ -->
+            <div class="inline-drawer pxi-sub">
+                <div class="inline-drawer-toggle inline-drawer-header">
+                    <b>① Connection 1 — Prompt Maker</b>
+                    <div class="inline-drawer-icon fa-solid fa-circle-chevron-down down"></div>
+                </div>
+                <div class="inline-drawer-content">
+                    <label for="pxi_c1_source">แหล่งที่ใช้สร้าง prompt</label>
+                    <select id="pxi_c1_source" class="text_pole">
+                        <option value="profile">Connection Profile ของ SillyTavern (แนะนำ)</option>
+                        <option value="custom">Custom OpenAI-compatible (ทางเลือก)</option>
+                    </select>
+
+                    <div class="pxi-c1-profile">
+                        <label for="pxi_c1_profile">โปรไฟล์</label>
+                        <div class="pxi-row">
+                            <select id="pxi_c1_profile" class="text_pole pxi-grow"></select>
+                            <div class="menu_button menu_button_icon" id="pxi_profile_refresh" title="รีเฟรชรายชื่อโปรไฟล์"><i class="fa-solid fa-rotate"></i></div>
+                        </div>
+                        <small class="pxi-hint">รองรับโปรไฟล์แบบ Chat Completion และ Text Completion • เว้นไว้ = ใช้โปรไฟล์ที่กำลังเปิดอยู่</small>
+                        <div class="pxi-note">อย่าลืมกดปุ่ม <b>Save (💾)</b> ใน Connection Manager หลังสร้างหรือแก้โปรไฟล์ — โปรไฟล์ที่ยังไม่เซฟจะไม่ถูก detect และค่าจะรีเซ็ตทุกครั้งที่สลับโปรไฟล์</div>
+                        <div id="pxi_profile_warning" class="pxi-note pxi-warn pxi-hidden">ยังไม่พบโปรไฟล์ที่บันทึกไว้เลย — ไปที่ Connection Manager สร้างโปรไฟล์แล้วกด Save ก่อน แล้วค่อยกดปุ่มรีเฟรช</div>
+                    </div>
+
+                    <div class="pxi-c1-custom">
+                        <label for="pxi_llm_url">Base URL</label>
+                        <input id="pxi_llm_url" class="text_pole" type="text" placeholder="https://your-proxy.com/v1">
+                        <label for="pxi_llm_key">API Key</label>
+                        <input id="pxi_llm_key" class="text_pole" type="password" placeholder="sk-...">
+                        <label for="pxi_llm_model">Model</label>
+                        <div class="pxi-row">
+                            <input id="pxi_llm_model" class="text_pole pxi-grow" type="text" list="pxi_llm_model_list" placeholder="gpt-4o-mini">
+                            <datalist id="pxi_llm_model_list"></datalist>
+                            <div class="menu_button menu_button_icon" id="pxi_llm_fetch" title="ดึงรายชื่อโมเดล"><i class="fa-solid fa-rotate"></i></div>
+                        </div>
+                        <div class="pxi-grid3">
+                            <div>
+                                <label for="pxi_llm_temp">Temperature</label>
+                                <input id="pxi_llm_temp" class="text_pole" type="number" min="0" max="2" step="0.05">
+                            </div>
+                            <div>
+                                <label for="pxi_llm_timeout">Timeout (s)</label>
+                                <input id="pxi_llm_timeout" class="text_pole" type="number" min="5" max="600" step="5">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="pxi-grid3">
+                        <div>
+                            <label for="pxi_llm_max_tokens">Max tokens</label>
+                            <input id="pxi_llm_max_tokens" class="text_pole" type="number" min="16" max="4096" step="16">
+                        </div>
+                    </div>
+
+                    <div class="menu_button menu_button_icon" id="pxi_llm_test"><i class="fa-solid fa-plug"></i><span>ทดสอบ Connection 1</span></div>
+                </div>
+            </div>
+
+            <!-- ============ PROMPT TEMPLATES ============ -->
+            <div class="inline-drawer pxi-sub">
+                <div class="inline-drawer-toggle inline-drawer-header">
+                    <b>② Image Prompt Templates</b>
+                    <div class="inline-drawer-icon fa-solid fa-circle-chevron-down down"></div>
+                </div>
+                <div class="inline-drawer-content">
+                    <label for="pxi_tpl_mode">โหมด</label>
+                    <select id="pxi_tpl_mode" class="text_pole">
+                        <option value="portrait">Portrait (ตัวละคร)</option>
+                        <option value="selfie">Selfie (โคลสอัพหน้าตัวละคร)</option>
+                        <option value="user">User (เพอร์โซนาผู้ใช้)</option>
+                        <option value="last">Last Message (ฉากล่าสุด)</option>
+                        <option value="free">Free / Scene (คำสั่งทั่วไป)</option>
+                    </select>
+
+                    <label for="pxi_tpl_sys">System</label>
+                    <textarea id="pxi_tpl_sys" class="text_pole textarea_compact" rows="9"></textarea>
+
+                    <label for="pxi_extra_instruction">Extra instruction</label>
+                    <textarea id="pxi_extra_instruction" class="text_pole textarea_compact" rows="2" placeholder="เช่น เน้นโทนกลางคืน, ห้ามใส่หมวก"></textarea>
+                    <div class="pxi-note">
+                        <b>ข้อความนี้คือค่าของ <code>&#123;&#123;extra&#125;&#125;</code></b><br>
+                        ถูกแทรกท้าย <b>user message</b> ที่ระบบประกอบให้ เป็นบล็อก <code>--- Extra instruction ---</code> ก่อนบรรทัดปิดท้าย ใช้ได้ทุกหมวด<br>
+                        ข้อความที่พิมพ์หลัง <code>/pxi</code> จะถูกต่อเข้ากับช่องนี้ (ช่องนี้ขึ้นก่อน)<br>
+                        ช่อง System ด้านบนไม่ต้องเขียน <code>&#123;&#123;extra&#125;&#125;</code> เอง
+                    </div>
+
+                    <div class="pxi-row">
+                        <div class="menu_button menu_button_icon" id="pxi_tpl_reset"><i class="fa-solid fa-rotate-left"></i><span>รีเซ็ตโหมดนี้</span></div>
+                        <div class="menu_button menu_button_icon" id="pxi_tpl_reset_all"><i class="fa-solid fa-broom"></i><span>รีเซ็ตทั้งหมด</span></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ============ CONTEXT BUDGET ============ -->
+            <div class="inline-drawer pxi-sub">
+                <div class="inline-drawer-toggle inline-drawer-header">
+                    <b>③ Context Budget</b>
+                    <div class="inline-drawer-icon fa-solid fa-circle-chevron-down down"></div>
+                </div>
+                <div class="inline-drawer-content">
+                    <div class="pxi-grid3">
+                        <div>
+                            <label for="pxi_ctx_messages">ข้อความล่าสุด</label>
+                            <input id="pxi_ctx_messages" class="text_pole" type="number" min="0" max="50" step="1">
+                        </div>
+                        <div>
+                            <label for="pxi_ctx_chars">ตัด/ข้อความ (ตัวอักษร)</label>
+                            <input id="pxi_ctx_chars" class="text_pole" type="number" min="50" max="4000" step="50">
+                        </div>
+                        <div>
+                            <label for="pxi_ctx_total">เพดานรวม</label>
+                            <input id="pxi_ctx_total" class="text_pole" type="number" min="200" max="20000" step="100">
+                        </div>
+                    </div>
+                    <label class="checkbox_label" for="pxi_strip_html">
+                        <input id="pxi_strip_html" type="checkbox">
+                        <span>ตัด HTML / UI module block / code block</span>
+                    </label>
+                    <label class="checkbox_label" for="pxi_strip_system">
+                        <input id="pxi_strip_system" type="checkbox">
+                        <span>ข้ามข้อความระบบ (system / hidden)</span>
+                    </label>
+                </div>
+            </div>
+
+            <!-- ============ CONNECTION 2 ============ -->
+            <div class="inline-drawer pxi-sub">
+                <div class="inline-drawer-toggle inline-drawer-header">
+                    <b>④ Connection 2 — Image Generation</b>
+                    <div class="inline-drawer-icon fa-solid fa-circle-chevron-down down"></div>
+                </div>
+                <div class="inline-drawer-content">
+                    <label for="pxi_c2_source">ปลายทาง</label>
+                    <select id="pxi_c2_source" class="text_pole">
+                        <option value="nai">NovelAI Official (ผ่านเซิร์ฟเวอร์ ST)</option>
+                        <option value="custom">Custom / Reverse Proxy (OpenAI-compatible)</option>
+                    </select>
+
+                    <div class="pxi-c2-nai">
+                        <label for="pxi_nai_key">NovelAI API Key</label>
+                        <div class="pxi-row">
+                            <input id="pxi_nai_key" class="text_pole pxi-grow" type="password" placeholder="pst-... (กรอกแล้วกดบันทึก)">
+                            <div class="menu_button menu_button_icon" id="pxi_nai_save" title="บันทึกคีย์"><i class="fa-solid fa-floppy-disk"></i></div>
+                        </div>
+                        <small class="pxi-hint">บันทึกลงช่องเดียวกับ NovelAI API ของ SillyTavern คีย์ไม่ถูกเก็บในไฟล์ตั้งค่าของ extension</small>
+
+                        <label class="checkbox_label" for="pxi_anlas_guard">
+                            <input id="pxi_anlas_guard" type="checkbox">
+                            <span>Avoid spending Anlas <small class="pxi-hint pxi-inline">(Opus tier)</small></span>
+                        </label>
+                        <div class="menu_button menu_button_icon" id="pxi_anlas_view"><i class="fa-solid fa-coins"></i><span>View my Anlas</span></div>
+
+                        <label for="pxi_nai_model">Model</label>
+                        <select id="pxi_nai_model" class="text_pole">
+                            <option value="nai-diffusion-4-5-full">NAI Diffusion Anime V4.5 (Full)</option>
+                            <option value="nai-diffusion-4-5-curated">NAI Diffusion Anime V4.5 (Curated)</option>
+                            <option value="nai-diffusion-4-full">NAI Diffusion Anime V4 (Full)</option>
+                            <option value="nai-diffusion-4-curated-preview">NAI Diffusion Anime V4 (Curated)</option>
+                            <option value="nai-diffusion-3">NAI Diffusion Anime V3</option>
+                            <option value="nai-diffusion-furry-3">NAI Diffusion Furry V3</option>
+                        </select>
+                    </div>
+
+                    <div class="pxi-c2-custom">
+                        <label for="pxi_img_url">Base URL</label>
+                        <input id="pxi_img_url" class="text_pole" type="text" placeholder="https://your-nai-proxy.com/v1">
+                        <label for="pxi_img_key">API Key</label>
+                        <input id="pxi_img_key" class="text_pole" type="password" placeholder="sk-...">
+                        <label for="pxi_img_model">Model</label>
+                        <div class="pxi-row">
+                            <input id="pxi_img_model" class="text_pole pxi-grow" type="text" list="pxi_img_model_list" placeholder="nai-diffusion-4-5-full">
+                            <datalist id="pxi_img_model_list"></datalist>
+                            <div class="menu_button menu_button_icon" id="pxi_img_fetch" title="ดึงรายชื่อโมเดล"><i class="fa-solid fa-rotate"></i></div>
+                        </div>
+                        <label for="pxi_img_format">Response format</label>
+                        <select id="pxi_img_format" class="text_pole">
+                            <option value="b64_json">b64_json</option>
+                            <option value="url">url</option>
+                            <option value="">(ไม่ส่งฟิลด์นี้)</option>
+                        </select>
+                    </div>
+
+                    <div class="menu_button menu_button_icon" id="pxi_img_test"><i class="fa-solid fa-plug"></i><span>ทดสอบ Connection 2</span></div>
+                </div>
+            </div>
+
+            <!-- ============ IMAGE PARAMS ============ -->
+            <div class="inline-drawer pxi-sub">
+                <div class="inline-drawer-toggle inline-drawer-header">
+                    <b>⑤ Image Parameters</b>
+                    <div class="inline-drawer-icon fa-solid fa-circle-chevron-down down"></div>
+                </div>
+                <div class="inline-drawer-content">
+                    <div class="pxi-grid3">
+                        <div>
+                            <label for="pxi_size">Size (กว้างxสูง)</label>
+                            <input id="pxi_size" class="text_pole" type="text" list="pxi_size_list" placeholder="832x1216">
+                            <datalist id="pxi_size_list">
+                                <option value="832x1216"></option>
+                                <option value="1216x832"></option>
+                                <option value="1024x1024"></option>
+                                <option value="512x768"></option>
+                                <option value="1024x1536"></option>
+                            </datalist>
+                        </div>
+                        <div>
+                            <label for="pxi_sampler">Sampling method</label>
+                            <select id="pxi_sampler" class="text_pole">
+                                <option value="k_euler_ancestral">k_euler_ancestral</option>
+                                <option value="k_euler">k_euler</option>
+                                <option value="k_dpmpp_2m">k_dpmpp_2m</option>
+                                <option value="k_dpmpp_sde">k_dpmpp_sde</option>
+                                <option value="k_dpmpp_2s_ancestral">k_dpmpp_2s_ancestral</option>
+                                <option value="k_dpm_fast">k_dpm_fast</option>
+                                <option value="ddim">ddim</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label for="pxi_scheduler">Scheduler</label>
+                            <select id="pxi_scheduler" class="text_pole">
+                                <option value="karras">karras</option>
+                                <option value="native">native</option>
+                                <option value="exponential">exponential</option>
+                                <option value="polyexponential">polyexponential</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <small class="pxi-hint pxi-c2-nai">เปิด "Avoid spending Anlas" ไว้ ระบบจะย่อภาพให้ไม่เกิน 1024x1024 และ steps ไม่เกิน 28 ให้อัตโนมัติ (ไม่แก้ค่าที่ตั้งไว้)</small>
+                    <div class="pxi-grid3">
+                        <div>
+                            <label for="pxi_steps">Sampling steps</label>
+                            <input id="pxi_steps" class="text_pole" type="number" min="1" max="50" step="1">
+                        </div>
+                        <div>
+                            <label for="pxi_scale">CFG scale</label>
+                            <input id="pxi_scale" class="text_pole" type="number" min="1" max="20" step="0.5">
+                        </div>
+                        <div>
+                            <label for="pxi_seed">Seed (-1 = สุ่ม)</label>
+                            <input id="pxi_seed" class="text_pole" type="number" min="-1" step="1">
+                        </div>
+                    </div>
+
+                    <div class="pxi-grid3">
+                        <div>
+                            <label for="pxi_upscale">Upscale (1 = ปิด)</label>
+                            <input id="pxi_upscale" class="text_pole" type="number" min="1" max="4" step="1">
+                        </div>
+                        <div>
+                            <label for="pxi_img_timeout">Timeout (s)</label>
+                            <input id="pxi_img_timeout" class="text_pole" type="number" min="10" max="900" step="10">
+                        </div>
+                    </div>
+
+                    <label class="checkbox_label" for="pxi_variety"><input id="pxi_variety" type="checkbox"><span>Variety boost</span></label>
+                    <label class="checkbox_label" for="pxi_decrisper"><input id="pxi_decrisper" type="checkbox"><span>Decrisper (dynamic thresholding)</span></label>
+                    <label class="checkbox_label" for="pxi_sm"><input id="pxi_sm" type="checkbox"><span>SMEA (เฉพาะ V3 และก่อนหน้า)</span></label>
+                    <label class="checkbox_label" for="pxi_sm_dyn"><input id="pxi_sm_dyn" type="checkbox"><span>SMEA DYN</span></label>
+
+                    <div class="menu_button menu_button_icon pxi-c2-nai" id="pxi_nai_recommended"><i class="fa-solid fa-wand-sparkles"></i><span>ใส่ค่าที่ NovelAI แนะนำ (ตามโมเดลที่เลือก)</span></div>
+
+                    <label for="pxi_prefix">Positive prefix</label>
+                    <textarea id="pxi_prefix" class="text_pole textarea_compact" rows="2"></textarea>
+                    <label for="pxi_suffix">Positive suffix</label>
+                    <textarea id="pxi_suffix" class="text_pole textarea_compact" rows="2"></textarea>
+                    <label for="pxi_negative">Negative prompt</label>
+                    <textarea id="pxi_negative" class="text_pole textarea_compact" rows="3"></textarea>
+
+                    <div class="pxi-c2-custom">
+                        <label for="pxi_extra_body">Advanced extra body (JSON)</label>
+                        <small class="pxi-hint">merge ทับพารามิเตอร์ข้างบน เฉพาะโหมด Custom เช่น <code>{"noise_schedule":"karras","dynamic_thresholding":true}</code></small>
+                        <textarea id="pxi_extra_body" class="text_pole textarea_compact pxi-mono" rows="3"></textarea>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ============ OUTPUT ============ -->
+            <div class="inline-drawer pxi-sub">
+                <div class="inline-drawer-toggle inline-drawer-header">
+                    <b>⑥ Output</b>
+                    <div class="inline-drawer-icon fa-solid fa-circle-chevron-down down"></div>
+                </div>
+                <div class="inline-drawer-content">
+                    <label for="pxi_msg_template">Message template</label>
+                    <input id="pxi_msg_template" class="text_pole" type="text">
+                    <label class="checkbox_label" for="pxi_hide_message">
+                        <input id="pxi_hide_message" type="checkbox">
+                        <span>ซ่อนข้อความรูปจาก prompt ของ AI (is_system)</span>
+                    </label>
+                    <label class="checkbox_label" for="pxi_wand_button">
+                        <input id="pxi_wand_button" type="checkbox">
+                        <span>แสดงปุ่มในเมนู Extensions (ไม้กายสิทธิ์)</span>
+                    </label>
+                </div>
+            </div>
+
+            <div class="inline-drawer pxi-sub">
+                <div class="inline-drawer-toggle inline-drawer-header">
+                    <b>⑦ NovelAI Cheatsheet</b>
+                    <div class="inline-drawer-icon fa-solid fa-circle-chevron-down down"></div>
+                </div>
+                <div class="inline-drawer-content">
+                    <small class="pxi-hint">สรุปสั้น ๆ จาก docs.novelai.net กดอ่าน คัดลอก หรือบันทึกเก็บไว้ได้</small>
+                    <div id="pxi_docs_list" class="pxi-docs-list"></div>
+                    <div class="menu_button menu_button_icon" id="pxi_docs_save_all"><i class="fa-solid fa-file-arrow-down"></i><span>บันทึกทั้งหมดเป็น .md</span></div>
+                </div>
+            </div>
+
+            <div id="pxi_status" class="pxi-status">พร้อมใช้งาน</div>
+            <div class="pxi-credit">Proxy Image Gen — @xo.nara &amp; Claude</div>
+        </div>
+    </div>
+</div>
