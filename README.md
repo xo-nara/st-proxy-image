@@ -17,7 +17,7 @@ Connection Profile ของ ST                NovelAI Official
 |---|---|---|
 | Portrait | `{{description}}` `{{personality}}` + `{{lastMessage}}` | รูปตัวละครเดี่ยวตามสภาพในฉากปัจจุบัน |
 | Selfie | `{{description}}` + `{{lastMessage}}` | โคลสอัพหน้า {{char}} หัวถึงคอ พร้อมสีหน้าและฉากปัจจุบัน |
-| User | `{{persona}}` + `{{lastMessage}}` | ตัวละครฝั่ง {{user}} ตามสภาพในฉากปัจจุบัน |
+| User | `{{persona}}` (โครง) + `{{lastMessage}}` (ชุด/ท่าทาง/ฉาก) | ตัวละครฝั่ง {{user}} ตามสภาพและท่าทางในฉากปัจจุบัน |
 | Last Message | `{{lastMessage}}` + `{{chat}}` | ฉากล่าสุด รองรับหลายตัวละคร |
 | Free / Scene | `{{chat}}` | คำสั่งอิสระ |
 
@@ -29,6 +29,10 @@ Connection Profile ของ ST                NovelAI Official
 ส่วน user message ระบบประกอบให้เองตามโหมด จึงไม่ต้องดูแล
 
 ทุก default template สอนโมเดลเรื่อง:
+- **Cast ทั้งฉาก** (โหมด last/free) ไล่ชื่อตัวละครทุกตัวที่ปรากฏในข้อความ ไม่ใช่แค่ `{{char}}` + count tag ต้องตรงกับ cast
+- **ตำแหน่ง** ยึดตำแหน่งสุดท้ายในข้อความ เรียงบล็อกซ้าย→ขวา และเสริมด้วย relation/foreground/background
+- **ส่วนสูงและระดับสายตา** แท็ก build สัมบูรณ์ + `height difference` ทั้งสองฝั่ง + เงย/ก้มตามระดับสายตาจริง (นั่ง/คุกเข่าชนะส่วนสูงดิบ)
+- **Style tail** ปิดท้ายทุก prompt ทั้ง 5 โหมด ด้วยแท็กสไตล์ของแฟรนไชส์ (genshin impact / arknights / project sekai ฯลฯ) + rendering style + `masterpiece, very aesthetic, absurdres, best quality`
 - แท็กตัวละครแบบ Danbooru `name (series)` และแท็กชุดเฉพาะ เช่น `usada pekora (1st costume)` ถ้าไม่มั่นใจให้ข้ามไม่ให้เดา
 - ลำดับแท็กตามที่ NAI แนะนำ + ห้ามใส่แท็กเฟรมชนกัน + แท็กที่ถูกเปลี่ยนชื่อ (`peace sign` ไม่ใช่ `v`)
 - **Density**: `1.2::tag, tag ::` ปิดด้วย `::` เปล่า, `-1::hat ::` เพื่อลบของ, ใช้ 2-3 จุดพอ และห้ามใช้ `(tag:1.2)` แบบ SD หรือ `|`
