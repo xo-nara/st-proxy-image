@@ -109,7 +109,7 @@ const defaultSettings = {
     img_timeout: 180,
 
     // Image parameters
-    size: '832x1216',
+    size: '768x1344',
     sampler: 'k_euler_ancestral',
     scheduler: 'karras',
     steps: 28,
@@ -119,7 +119,7 @@ const defaultSettings = {
     decrisper: false,
     variety_boost: true,
     sm: false,
-    sm_dyn: false,
+    sm_dyn: false, // ปิดถาวร: SMEA DYN ใช้ไม่ได้กับ V4 ขึ้นไป
     extra_body: '',
 
     prefix: '',
@@ -161,7 +161,6 @@ const BINDINGS = [
     ['pxi_img_model', 'img_model', 'text'],
     ['pxi_img_format', 'img_format', 'text'],
     ['pxi_img_timeout', 'img_timeout', 'number'],
-    ['pxi_size', 'size', 'text'],
     ['pxi_sampler', 'sampler', 'text'],
     ['pxi_scheduler', 'scheduler', 'text'],
     ['pxi_steps', 'steps', 'number'],
@@ -171,7 +170,6 @@ const BINDINGS = [
     ['pxi_decrisper', 'decrisper', 'bool'],
     ['pxi_variety', 'variety_boost', 'bool'],
     ['pxi_sm', 'sm', 'bool'],
-    ['pxi_sm_dyn', 'sm_dyn', 'bool'],
     ['pxi_extra_body', 'extra_body', 'text'],
     ['pxi_prefix', 'prefix', 'text'],
     ['pxi_suffix', 'suffix', 'text'],
@@ -183,6 +181,7 @@ const BINDINGS = [
 ];
 
 let isBusy = false;
+let isSwipePromptOpen = false;
 let connectionService = null;
 
 function settings() {
@@ -202,6 +201,7 @@ function initSettings() {
     if (s.templates.yourself && !s.templates.user) s.templates.user = s.templates.yourself;
     delete s.templates.yourself;
     delete s.user_use_default;
+    s.sm_dyn = false; // ปิดถาวรตั้งแต่ 2.6.0
     for (const mode of MODES) {
         if (!s.templates[mode] || typeof s.templates[mode] !== 'object') s.templates[mode] = defaultTemplate(mode);
         if (typeof s.templates[mode].sys !== 'string') s.templates[mode].sys = DEFAULT_TEMPLATES[mode].sys;
@@ -699,10 +699,40 @@ function composePrompt(prompt) {
     return [s.prefix, prompt, s.suffix].map(p => String(p || '').trim()).filter(Boolean).join(', ');
 }
 
+const SIZE_PRESETS = [
+    ['768x1344', '768 x 1344  (3:4 แนวตั้ง)'],
+    ['1344x768', '1344 x 768  (4:3 แนวนอน)'],
+    ['832x1216', '832 x 1216  (2:3 แนวตั้ง, NAI Portrait)'],
+    ['1216x832', '1216 x 832  (3:2 แนวนอน, NAI Landscape)'],
+    ['1024x1024', '1024 x 1024  (1:1 จัตุรัส)'],
+    ['896x1152', '896 x 1152  (3:4 แนวตั้ง เล็ก)'],
+    ['1152x896', '1152 x 896  (4:3 แนวนอน เล็ก)'],
+    ['640x1536', '640 x 1536  (9:21 แนวตั้งสูง)'],
+    ['1536x640', '1536 x 640  (21:9 แนวนอนกว้าง)'],
+    ['1024x1536', '1024 x 1536  (2:3 ใหญ่, กิน Anlas)'],
+    ['1536x1024', '1536 x 1024  (3:2 ใหญ่, กิน Anlas)'],
+    ['1472x1472', '1472 x 1472  (1:1 ใหญ่, กิน Anlas)'],
+];
+
+/** ปัดลงเป็นทวีคูณของ 64 ตามที่โมเดล diffusion ต้องการ */
+function snap64(value, fallback) {
+    const number = Number(value);
+    if (!Number.isFinite(number) || number < 64) return fallback;
+    const snapped = Math.round(number / 64) * 64;
+    return Math.min(2048, Math.max(64, snapped));
+}
+
 function parseSize() {
     const match = String(settings().size || '').match(/(\d{2,5})\s*[x×*]\s*(\d{2,5})/i);
-    if (!match) return { width: 832, height: 1216 };
-    return { width: Number(match[1]), height: Number(match[2]) };
+    if (!match) return { width: 768, height: 1344 };
+    return { width: snap64(match[1], 768), height: snap64(match[2], 1344) };
+}
+
+/** ขนาดที่จะถูกส่งจริง หลังปัด 64 และหลัง Anlas guard */
+function resolvedSize() {
+    const base = parseSize();
+    const steps = Math.min(50, Math.max(1, Number(settings().steps) || 28));
+    return applyAnlasGuard(base.width, base.height, steps);
 }
 
 function parseExtraBody() {
@@ -767,12 +797,7 @@ function applyAnlasGuard(width, height, steps) {
 async function stage2NovelAI(prompt) {
     const context = getContext();
     const s = settings();
-    const size = parseSize();
-    const { width, height, steps } = applyAnlasGuard(
-        size.width,
-        size.height,
-        Math.min(50, Math.max(1, Number(s.steps) || 28)),
-    );
+    const { width, height, steps } = resolvedSize();
     const body = {
         prompt: composePrompt(prompt),
         model: s.nai_model,
@@ -787,9 +812,10 @@ async function stage2NovelAI(prompt) {
         decrisper: !!s.decrisper,
         variety_boost: !!s.variety_boost,
         sm: !!s.sm,
-        sm_dyn: !!s.sm_dyn,
+        sm_dyn: false,
         seed: Number(s.seed) >= 0 ? Number(s.seed) : undefined,
     };
+    console.log(LOG, 'NovelAI payload', { ...body, prompt: body.prompt.slice(0, 80) + '…' });
     const raw = await requestRaw('/api/novelai/generate-image', {
         method: 'POST',
         headers: context.getRequestHeaders(),
@@ -804,6 +830,7 @@ async function stage2Custom(prompt) {
     const s = settings();
     const url = buildUrl(s.img_url, 'images/generations');
     const { width, height } = parseSize();
+    console.log(LOG, 'custom image request', { url, width, height, model: s.img_model });
     const body = {
         prompt: composePrompt(prompt),
         n: 1,
@@ -967,9 +994,19 @@ async function onImageSwiped({ message, direction }) {
     const index = Number(message.extra.media_index) || 0;
     if (index !== media.length - 1) return; // ปัดถึงใบสุดท้ายแล้วเท่านั้น
 
-    const previous = media[index]?.title || message.extra.pxi.prompt || '';
-    const edited = await editPrompt(previous, 'ตรวจและแก้ prompt แล้วเจนใบใหม่ (ปัดซ้ายเพื่อย้อนดูใบเก่า)');
+    // กันหน้าต่างแก้ prompt เด้งซ้ำเมื่อ IMAGE_SWIPED ยิงมาหลายครั้งระหว่างที่ popup ยังเปิดอยู่
+    if (isSwipePromptOpen) return;
+    isSwipePromptOpen = true;
+
+    let edited;
+    try {
+        const previous = media[index]?.title || message.extra.pxi.prompt || '';
+        edited = await editPrompt(previous, 'ตรวจและแก้ prompt แล้วเจนใบใหม่ (ปัดซ้ายเพื่อย้อนดูใบเก่า)');
+    } finally {
+        isSwipePromptOpen = false;
+    }
     if (!edited) return;
+    if (isBusy) { notify('กำลังทำงานอยู่ กรุณารอสักครู่', 'warning'); return; }
 
     isBusy = true;
     try {
@@ -978,7 +1015,9 @@ async function onImageSwiped({ message, direction }) {
         const image = await stage2GenerateImage(edited);
         const path = image.kind === 'base64' ? await uploadBase64(image.value) : image.value;
         media.push({ url: path, type: 'image', title: edited, source: 'generated', generation_type: 'proxy_image_gen' });
+        message.extra.media_index = media.length - 1;
         message.extra.pxi.prompt = edited;
+        try { await getContext().saveChat(); } catch { /* ignore */ }
         setStatus('เสร็จสิ้น');
     } catch (error) {
         console.error(LOG, error);
@@ -1035,21 +1074,30 @@ function applyRecommended() {
     const s = settings();
     const model = s.nai_model || 'nai-diffusion-4-5-full';
     const isV3 = model.includes('-3');
+    const isCurated = model.includes('curated');
+
+    // ขนาดภาพเป็นค่าเดียวที่ไม่แตะ ตามที่ผู้ใช้ตั้งไว้เอง
     s.prefix = '';
     s.suffix = NAI_QUALITY_SUFFIX[model] || NAI_QUALITY_SUFFIX['nai-diffusion-4-5-full'];
-    s.negative = isV3 ? NAI_NEGATIVE.v3 : (model.includes('curated') ? NAI_NEGATIVE.curated : NAI_NEGATIVE.full);
+    s.negative = isV3 ? NAI_NEGATIVE.v3 : (isCurated ? NAI_NEGATIVE.curated : NAI_NEGATIVE.full);
     s.sampler = 'k_euler_ancestral';
     s.scheduler = 'karras';
     s.steps = 28;
-    s.scale = 5;
-    s.variety_boost = true;
+    s.scale = isV3 ? 6 : 5;
+    s.seed = -1;
+    s.upscale_ratio = 1;
+    s.variety_boost = !isV3;
     s.decrisper = false;
-    s.sm = isV3 ? s.sm : false;
-    s.sm_dyn = isV3 ? s.sm_dyn : false;
+    s.sm = isV3;
+    s.sm_dyn = false;
+    s.anlas_guard = true;
+    s.img_timeout = 180;
+    s.extra_body = '';
+
     loadSettingsToUi();
     context.saveSettingsDebounced();
-    notify('ใส่ค่าที่ NovelAI แนะนำสำหรับ ' + model + ' แล้ว', 'success');
-    setStatus('ใช้ค่าแนะนำของ ' + model + ' (quality tag ต่อท้าย + Human Focus UC)');
+    notify('ใส่ค่าที่ NovelAI แนะนำสำหรับ ' + model + ' แล้ว (ไม่แตะขนาดภาพ)', 'success');
+    setStatus('ใช้ค่าแนะนำของ ' + model + ' — ขนาดภาพคงไว้ที่ ' + (s.size || '-'));
 }
 
 async function viewAnlas() {
@@ -1286,6 +1334,64 @@ function resetTemplate(all = false) {
     notify(all ? 'รีเซ็ตทุก template กลับค่าเริ่มต้นแล้ว' : 'รีเซ็ต template นี้แล้ว', 'success');
 }
 
+function populateSizePresets() {
+    const select = document.getElementById('pxi_size_preset');
+    if (!select || select.dataset?.filled === '1') return;
+    select.innerHTML = '';
+    const custom = document.createElement('option');
+    custom.value = '';
+    custom.textContent = '⟨กำหนดเอง⟩';
+    select.append(custom);
+    for (const [value, label] of SIZE_PRESETS) {
+        const option = document.createElement('option');
+        option.value = value;
+        option.textContent = label;
+        select.append(option);
+    }
+    if (select.dataset) select.dataset.filled = '1';
+}
+
+function updateSizeUi() {
+    const s = settings();
+    const select = document.getElementById('pxi_size_preset');
+    const field = document.getElementById('pxi_size');
+    const hint = document.getElementById('pxi_size_hint');
+    const current = String(s.size || '').replace(/\s/g, '').toLowerCase();
+
+    if (select) select.value = SIZE_PRESETS.some(([value]) => value === current) ? current : '';
+    if (field && document.activeElement !== field) field.value = s.size ?? '';
+
+    if (hint) {
+        const base = parseSize();
+        const final = resolvedSize();
+        const shrunk = final.width !== base.width || final.height !== base.height;
+        const orientation = final.width > final.height ? 'แนวนอน' : final.width < final.height ? 'แนวตั้ง' : 'จัตุรัส';
+        hint.textContent = shrunk
+            ? `จะส่งจริง ${final.width}x${final.height} (${orientation}) — ย่อจาก ${base.width}x${base.height} โดย "Avoid spending Anlas"`
+            : `จะส่งจริง ${final.width}x${final.height} (${orientation})`;
+        hint.classList.toggle('pxi-warn', shrunk);
+    }
+}
+
+function applySizeFromField() {
+    const context = getContext();
+    const field = document.getElementById('pxi_size');
+    const raw = String(field?.value || '').trim();
+    const match = raw.match(/(\d{2,5})\s*[x×*]\s*(\d{2,5})/i);
+    if (!match) {
+        notify('รูปแบบขนาดไม่ถูกต้อง ใช้แบบ 768x1344', 'warning');
+        return;
+    }
+    const width = snap64(match[1], 768);
+    const height = snap64(match[2], 1344);
+    settings().size = `${width}x${height}`;
+    if (field) field.value = settings().size;
+    updateSizeUi();
+    context.saveSettingsDebounced();
+    const snapped = width !== Number(match[1]) || height !== Number(match[2]);
+    notify(snapped ? `บันทึกแล้ว ปัดเป็นทวีคูณของ 64 เป็น ${settings().size}` : `บันทึกขนาด ${settings().size} แล้ว`, 'success');
+}
+
 function updateContextHints() {
     const el = document.getElementById('pxi_ctx_hint');
     if (!el) return;
@@ -1329,7 +1435,15 @@ function loadSettingsToUi() {
     }
     loadTemplateEditor();
     toggleSourceBlocks();
+    populateSizePresets();
+    updateSizeUi();
     updateContextHints();
+    const smeaDyn = document.getElementById('pxi_sm_dyn');
+    if (smeaDyn) {
+        smeaDyn.checked = false;
+        smeaDyn.disabled = true;
+        smeaDyn.closest?.('label')?.classList?.add('pxi-disabled');
+    }
 }
 
 function bindEvents() {
@@ -1346,6 +1460,7 @@ function bindEvents() {
             if (key === 'wand_button') updateWandButton();
             if (key === 'c1_source' || key === 'c2_source') toggleSourceBlocks();
             if (key.startsWith('ctx_') || key === 'llm_max_tokens') updateContextHints();
+            if (key === 'size' || key === 'steps' || key === 'anlas_guard') updateSizeUi();
             context.saveSettingsDebounced();
         });
     }
@@ -1360,6 +1475,18 @@ function bindEvents() {
     document.getElementById('pxi_llm_test')?.addEventListener('click', () => testConnection('llm'));
     document.getElementById('pxi_img_test')?.addEventListener('click', () => testConnection('img'));
     document.getElementById('pxi_nai_save')?.addEventListener('click', () => saveNovelKey());
+    document.getElementById('pxi_size_save')?.addEventListener('click', () => applySizeFromField());
+    document.getElementById('pxi_size')?.addEventListener('change', () => applySizeFromField());
+    document.getElementById('pxi_size_preset')?.addEventListener('change', (event) => {
+        const value = event.target.value;
+        if (!value) return;
+        settings().size = value;
+        const field = document.getElementById('pxi_size');
+        if (field) field.value = value;
+        updateSizeUi();
+        getContext().saveSettingsDebounced();
+        notify(`ตั้งขนาดเป็น ${value} แล้ว`, 'success');
+    });
     document.getElementById('pxi_anlas_view')?.addEventListener('click', () => viewAnlas());
     document.getElementById('pxi_profile_refresh')?.addEventListener('click', () => populateProfiles());
     document.getElementById('pxi_preview')?.addEventListener('click', () => previewPrompt());

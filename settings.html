@@ -233,86 +233,97 @@
                     <div class="inline-drawer-icon fa-solid fa-circle-chevron-down down"></div>
                 </div>
                 <div class="inline-drawer-content">
-                    <div class="pxi-grid3">
-                        <div>
-                            <label for="pxi_size">Size (กว้างxสูง)</label>
-                            <input id="pxi_size" class="text_pole" type="text" list="pxi_size_list" placeholder="832x1216">
-                            <datalist id="pxi_size_list">
-                                <option value="832x1216"></option>
-                                <option value="1216x832"></option>
-                                <option value="1024x1024"></option>
-                                <option value="512x768"></option>
-                                <option value="1024x1536"></option>
-                            </datalist>
+
+                    <div class="pxi-fieldset">
+                        <div class="pxi-fieldset-title">ขนาดภาพ</div>
+                        <label for="pxi_size_preset">ขนาดสำเร็จรูป</label>
+                        <select id="pxi_size_preset" class="text_pole"></select>
+
+                        <label for="pxi_size">กำหนดเอง (กว้างxสูง)</label>
+                        <div class="pxi-row">
+                            <input id="pxi_size" class="text_pole pxi-grow" type="text" inputmode="text" placeholder="768x1344">
+                            <div class="menu_button menu_button_icon" id="pxi_size_save" title="บันทึกขนาด"><i class="fa-solid fa-floppy-disk"></i><span>บันทึก</span></div>
                         </div>
-                        <div>
-                            <label for="pxi_sampler">Sampling method</label>
-                            <select id="pxi_sampler" class="text_pole">
-                                <option value="k_euler_ancestral">k_euler_ancestral</option>
-                                <option value="k_euler">k_euler</option>
-                                <option value="k_dpmpp_2m">k_dpmpp_2m</option>
-                                <option value="k_dpmpp_sde">k_dpmpp_sde</option>
-                                <option value="k_dpmpp_2s_ancestral">k_dpmpp_2s_ancestral</option>
-                                <option value="k_dpm_fast">k_dpm_fast</option>
-                                <option value="ddim">ddim</option>
-                            </select>
+                        <div id="pxi_size_hint" class="pxi-note"></div>
+                        <small class="pxi-hint">ค่าจะถูกปัดเป็นทวีคูณของ 64 อัตโนมัติ • ปุ่ม "ใส่ค่าที่ NovelAI แนะนำ" จะไม่แตะขนาดภาพ</small>
+                    </div>
+
+                    <div class="pxi-fieldset">
+                        <div class="pxi-fieldset-title">การสุ่มภาพ</div>
+                        <div class="pxi-grid2">
+                            <div>
+                                <label for="pxi_sampler">Sampling method</label>
+                                <select id="pxi_sampler" class="text_pole">
+                                    <option value="k_euler_ancestral">k_euler_ancestral</option>
+                                    <option value="k_euler">k_euler</option>
+                                    <option value="k_dpmpp_2m">k_dpmpp_2m</option>
+                                    <option value="k_dpmpp_sde">k_dpmpp_sde</option>
+                                    <option value="k_dpmpp_2s_ancestral">k_dpmpp_2s_ancestral</option>
+                                    <option value="k_dpm_fast">k_dpm_fast</option>
+                                    <option value="ddim">ddim</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label for="pxi_scheduler">Scheduler</label>
+                                <select id="pxi_scheduler" class="text_pole">
+                                    <option value="karras">karras</option>
+                                    <option value="native">native</option>
+                                    <option value="exponential">exponential</option>
+                                    <option value="polyexponential">polyexponential</option>
+                                </select>
+                            </div>
                         </div>
-                        <div>
-                            <label for="pxi_scheduler">Scheduler</label>
-                            <select id="pxi_scheduler" class="text_pole">
-                                <option value="karras">karras</option>
-                                <option value="native">native</option>
-                                <option value="exponential">exponential</option>
-                                <option value="polyexponential">polyexponential</option>
-                            </select>
+                        <div class="pxi-grid2">
+                            <div>
+                                <label for="pxi_steps">Sampling steps</label>
+                                <input id="pxi_steps" class="text_pole" type="number" min="1" max="50" step="1">
+                            </div>
+                            <div>
+                                <label for="pxi_scale">CFG scale</label>
+                                <input id="pxi_scale" class="text_pole" type="number" min="1" max="20" step="0.5">
+                            </div>
+                        </div>
+                        <div class="pxi-grid2">
+                            <div>
+                                <label for="pxi_seed">Seed (-1 = สุ่ม)</label>
+                                <input id="pxi_seed" class="text_pole" type="number" min="-1" step="1">
+                            </div>
+                            <div>
+                                <label for="pxi_upscale">Upscale (1 = ปิด)</label>
+                                <input id="pxi_upscale" class="text_pole" type="number" min="1" max="4" step="1">
+                            </div>
+                        </div>
+                        <div class="pxi-grid2">
+                            <div>
+                                <label for="pxi_img_timeout">Timeout (วินาที)</label>
+                                <input id="pxi_img_timeout" class="text_pole" type="number" min="10" max="900" step="10">
+                            </div>
                         </div>
                     </div>
 
-                    <small class="pxi-hint pxi-c2-nai">เปิด "Avoid spending Anlas" ไว้ ระบบจะย่อภาพให้ไม่เกิน 1024x1024 และ steps ไม่เกิน 28 ให้อัตโนมัติ (ไม่แก้ค่าที่ตั้งไว้)</small>
-                    <div class="pxi-grid3">
-                        <div>
-                            <label for="pxi_steps">Sampling steps</label>
-                            <input id="pxi_steps" class="text_pole" type="number" min="1" max="50" step="1">
-                        </div>
-                        <div>
-                            <label for="pxi_scale">CFG scale</label>
-                            <input id="pxi_scale" class="text_pole" type="number" min="1" max="20" step="0.5">
-                        </div>
-                        <div>
-                            <label for="pxi_seed">Seed (-1 = สุ่ม)</label>
-                            <input id="pxi_seed" class="text_pole" type="number" min="-1" step="1">
-                        </div>
+                    <div class="pxi-fieldset">
+                        <div class="pxi-fieldset-title">ตัวเลือกเสริม</div>
+                        <label class="checkbox_label" for="pxi_variety"><input id="pxi_variety" type="checkbox"><span>Variety boost <small class="pxi-hint pxi-inline">(V4 ขึ้นไป กันภาพหน้าซ้ำ)</small></span></label>
+                        <label class="checkbox_label" for="pxi_decrisper"><input id="pxi_decrisper" type="checkbox"><span>Decrisper <small class="pxi-hint pxi-inline">(dynamic thresholding เมื่อ CFG สูง)</small></span></label>
+                        <label class="checkbox_label" for="pxi_sm"><input id="pxi_sm" type="checkbox"><span>SMEA <small class="pxi-hint pxi-inline">(V3 และก่อนหน้าเท่านั้น)</small></span></label>
+                        <label class="checkbox_label pxi-disabled" for="pxi_sm_dyn"><input id="pxi_sm_dyn" type="checkbox" disabled><span>SMEA DYN <small class="pxi-hint pxi-inline">(ปิดถาวร — ทำให้ภาพเพี้ยนบน V4 ขึ้นไป)</small></span></label>
                     </div>
 
-                    <div class="pxi-grid3">
-                        <div>
-                            <label for="pxi_upscale">Upscale (1 = ปิด)</label>
-                            <input id="pxi_upscale" class="text_pole" type="number" min="1" max="4" step="1">
+                    <div class="pxi-fieldset">
+                        <div class="pxi-fieldset-title">แท็กประกอบ</div>
+                        <div class="menu_button menu_button_icon pxi-c2-nai pxi-wide-button" id="pxi_nai_recommended"><i class="fa-solid fa-wand-sparkles"></i><span>ใส่ค่าที่ NovelAI แนะนำ (ทุกค่ายกเว้นขนาดภาพ)</span></div>
+                        <label for="pxi_prefix">Positive prefix</label>
+                        <textarea id="pxi_prefix" class="text_pole textarea_compact" rows="2"></textarea>
+                        <label for="pxi_suffix">Positive suffix</label>
+                        <textarea id="pxi_suffix" class="text_pole textarea_compact" rows="2"></textarea>
+                        <label for="pxi_negative">Negative prompt</label>
+                        <textarea id="pxi_negative" class="text_pole textarea_compact" rows="3"></textarea>
+
+                        <div class="pxi-c2-custom">
+                            <label for="pxi_extra_body">Advanced extra body (JSON)</label>
+                            <small class="pxi-hint">merge ทับพารามิเตอร์ข้างบน เฉพาะโหมด Custom เช่น <code>{"noise_schedule":"karras"}</code></small>
+                            <textarea id="pxi_extra_body" class="text_pole textarea_compact pxi-mono" rows="3"></textarea>
                         </div>
-                        <div>
-                            <label for="pxi_img_timeout">Timeout (s)</label>
-                            <input id="pxi_img_timeout" class="text_pole" type="number" min="10" max="900" step="10">
-                        </div>
-                    </div>
-
-                    <label class="checkbox_label" for="pxi_variety"><input id="pxi_variety" type="checkbox"><span>Variety boost</span></label>
-                    <label class="checkbox_label" for="pxi_decrisper"><input id="pxi_decrisper" type="checkbox"><span>Decrisper (dynamic thresholding)</span></label>
-                    <label class="checkbox_label" for="pxi_sm"><input id="pxi_sm" type="checkbox"><span>SMEA (เฉพาะ V3 และก่อนหน้า)</span></label>
-                    <label class="checkbox_label" for="pxi_sm_dyn"><input id="pxi_sm_dyn" type="checkbox"><span>SMEA DYN</span></label>
-
-                    <div class="menu_button menu_button_icon pxi-c2-nai" id="pxi_nai_recommended"><i class="fa-solid fa-wand-sparkles"></i><span>ใส่ค่าที่ NovelAI แนะนำ (ตามโมเดลที่เลือก)</span></div>
-
-                    <label for="pxi_prefix">Positive prefix</label>
-                    <textarea id="pxi_prefix" class="text_pole textarea_compact" rows="2"></textarea>
-                    <label for="pxi_suffix">Positive suffix</label>
-                    <textarea id="pxi_suffix" class="text_pole textarea_compact" rows="2"></textarea>
-                    <label for="pxi_negative">Negative prompt</label>
-                    <textarea id="pxi_negative" class="text_pole textarea_compact" rows="3"></textarea>
-
-                    <div class="pxi-c2-custom">
-                        <label for="pxi_extra_body">Advanced extra body (JSON)</label>
-                        <small class="pxi-hint">merge ทับพารามิเตอร์ข้างบน เฉพาะโหมด Custom เช่น <code>{"noise_schedule":"karras","dynamic_thresholding":true}</code></small>
-                        <textarea id="pxi_extra_body" class="text_pole textarea_compact pxi-mono" rows="3"></textarea>
                     </div>
                 </div>
             </div>

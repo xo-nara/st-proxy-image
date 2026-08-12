@@ -227,3 +227,54 @@
     margin-top: 3px;
     color: var(--warning, #ff6b6b);
 }
+
+.pxi-root .pxi-fieldset {
+    margin: 8px 0;
+    padding: 8px 10px;
+    border: 1px solid var(--SmartThemeBorderColor);
+    border-radius: 8px;
+}
+
+.pxi-root .pxi-fieldset-title {
+    margin-bottom: 4px;
+    font-size: 0.82em;
+    font-weight: 600;
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
+    opacity: 0.65;
+}
+
+.pxi-root .pxi-fieldset > label:first-of-type {
+    margin-top: 2px;
+}
+
+.pxi-root .pxi-grid2 {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin: 4px 0;
+}
+
+.pxi-root .pxi-grid2 > div {
+    flex: 1 1 130px;
+    min-width: 0;
+}
+
+.pxi-root .pxi-wide-button {
+    width: 100%;
+    justify-content: center;
+    margin-bottom: 6px;
+}
+
+.pxi-root .pxi-disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+}
+
+.pxi-root .pxi-disabled input {
+    cursor: not-allowed;
+}
+
+.pxi-root #pxi_size_hint {
+    margin: 6px 0 4px 0;
+}

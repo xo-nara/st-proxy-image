@@ -60,8 +60,10 @@ Undesired Content ทางการ • Medium/Art style/Coloring/FX • มุ
 **ข้อจำกัดที่ต้องรู้:** เซิร์ฟเวอร์ ST ส่ง `char_captions: []` เสมอ แปลว่าไวยากรณ์ `|` (base prompt | character prompt) ของ V4 **ใช้ไม่ได้** ผ่านเส้นทางนี้ default template จึงเขียนเป็น prompt ก้อนเดียว ถ้า proxy ส่วนตัวรองรับ char_captions ค่อยแก้ template เพิ่ม `|` เอง
 
 ## Image Parameters
-Sampling method, Scheduler, Steps, CFG scale, Seed, Upscale, Variety boost, Decrisper, SMEA / SMEA DYN
-โหมด Custom มีช่อง Advanced extra body (JSON) สำหรับ merge ทับพารามิเตอร์ทั้งหมด
+จัดเป็น 4 กลุ่ม: **ขนาดภาพ** (dropdown สำเร็จรูป + ช่องกำหนดเอง + ปุ่มบันทึก, ปัดเป็นทวีคูณของ 64 อัตโนมัติ, มีบรรทัดบอก "จะส่งจริง WxH" หลังผ่าน Anlas guard) • **การสุ่มภาพ** (Sampler, Scheduler, Steps, CFG, Seed, Upscale, Timeout) • **ตัวเลือกเสริม** (Variety boost, Decrisper, SMEA; SMEA DYN ปิดถาวรเพราะทำให้ภาพเพี้ยนบน V4 ขึ้นไป) • **แท็กประกอบ** (prefix / suffix / negative / extra body)
+
+ค่าเริ่มต้นของขนาดคือ **768x1344 (3:4)** และมี 1344x768 (4:3) ให้เลือกคู่กัน
+ปุ่ม **ใส่ค่าที่ NovelAI แนะนำ** ตั้งทุกค่าในหมวดนี้ให้ตามโมเดลที่เลือก **ยกเว้นขนาดภาพ** ที่คงไว้ตามที่ตั้งเอง
 
 ## Context Budget
 จำกัดข้อความล่าสุด / ตัวอักษรต่อข้อความ / เพดานรวม, ตัด HTML + UI module block + code block ออกก่อนส่ง
