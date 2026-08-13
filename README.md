@@ -49,6 +49,10 @@ Undesired Content ทางการ • Medium/Art style/Coloring/FX • มุ
 
 ปุ่ม **ใส่ค่าที่ NovelAI แนะนำ** ในหมวด ⑤ จะเซ็ต suffix เป็นชุด quality tag ทางการของโมเดลที่เลือก, negative เป็นชุด Human Focus, และ sampler/scheduler/steps/CFG ให้ทันที
 
+## Connection 2
+กดปุ่ม **เชื่อมต่อ** เพื่อตรวจการเชื่อมต่อและโหลดรายชื่อโมเดล — โหมด NovelAI จะแสดง tier, ยอด Anlas และสิทธิ์เจนรูปฟรี ส่วนโหมด Custom จะดึง `/models` มาเติมใน dropdown ให้เลือก (พิมพ์ชื่อโมเดลเองก็ได้ถ้า endpoint ไม่มี `/models`)
+ปุ่ม **ทดสอบเจนรูป** ยิงจริง 1 ใบเพื่อยืนยันว่า pipeline ทำงานครบ
+
 ## NovelAI Official
 กรอกคีย์แล้วกดบันทึก — คีย์ถูกเก็บในช่อง NovelAI ของ SillyTavern เอง (`api_key_novel`) ไม่ได้เก็บในไฟล์ตั้งค่าของ extension
 คำขอวิ่งผ่าน `/api/novelai/generate-image` ของเซิร์ฟเวอร์ ST จึงไม่ติด CORS

@@ -105,6 +105,7 @@ const defaultSettings = {
     img_url: '',
     img_key: '',
     img_model: '',
+    img_models: [],
     img_format: 'b64_json',
     img_timeout: 180,
 
@@ -202,6 +203,7 @@ function initSettings() {
     delete s.templates.yourself;
     delete s.user_use_default;
     s.sm_dyn = false; // ปิดถาวรตั้งแต่ 2.6.0
+    if (!Array.isArray(s.img_models)) s.img_models = [];
     for (const mode of MODES) {
         if (!s.templates[mode] || typeof s.templates[mode] !== 'object') s.templates[mode] = defaultTemplate(mode);
         if (typeof s.templates[mode].sys !== 'string') s.templates[mode].sys = DEFAULT_TEMPLATES[mode].sys;
@@ -1126,15 +1128,90 @@ async function viewAnlas() {
     }
 }
 
-async function fetchModels(kind) {
+function setC2State(text, tone = 'idle') {
+    const el = document.getElementById('pxi_c2_state');
+    if (!el) return;
+    el.textContent = text;
+    el.classList.toggle('pxi-warn', tone === 'error');
+    el.classList.toggle('pxi-ok', tone === 'ok');
+}
+
+function populateImageModels() {
+    const select = document.getElementById('pxi_img_model_select');
+    if (!select) return;
     const s = settings();
-    const isLlm = kind === 'llm';
+    const list = Array.isArray(s.img_models) ? s.img_models : [];
+    select.innerHTML = '';
+
+    const placeholder = document.createElement('option');
+    placeholder.value = '';
+    placeholder.textContent = list.length ? '⟨เลือกโมเดล⟩' : '⟨ยังไม่ได้เชื่อมต่อ⟩';
+    select.append(placeholder);
+
+    for (const id of list) {
+        const option = document.createElement('option');
+        option.value = id;
+        option.textContent = id;
+        select.append(option);
+    }
+    select.value = list.includes(s.img_model) ? s.img_model : '';
+}
+
+/** ตรวจการเชื่อมต่อของ Connection 2 แล้วโหลดรายชื่อโมเดล */
+async function connectC2() {
+    const context = getContext();
+    const s = settings();
     try {
-        const url = buildUrl(isLlm ? s.llm_url : s.img_url, 'models');
-        const data = await requestJson(url, { method: 'GET', headers: authHeaders(isLlm ? s.llm_key : s.img_key) }, 30, isLlm ? '1' : '2');
+        if (s.c2_source === 'nai') {
+            setC2State('กำลังตรวจบัญชี NovelAI...');
+            const response = await fetch('/api/novelai/status', { method: 'POST', headers: context.getRequestHeaders() });
+            if (!response.ok) {
+                throw new PxiError('เชื่อมต่อ NovelAI ไม่สำเร็จ', {
+                    stage: '2',
+                    status: response.status,
+                    hints: [
+                        'ยังไม่ได้บันทึกคีย์ NovelAI หรือคีย์ผิด — กรอกคีย์แล้วกดปุ่มบันทึกก่อน',
+                        'บัญชีต้องมี subscription ที่ใช้งานอยู่',
+                    ],
+                });
+            }
+            const data = await response.json();
+            const anlas = data?.trainingStepsLeft?.fixedTrainingStepsLeft ?? 0;
+            const bonus = data?.trainingStepsLeft?.purchasedTrainingSteps ?? 0;
+            const unlimited = data?.perks?.unlimitedImageGeneration ?? false;
+            const tier = data?.tier ?? '?';
+            setC2State(`เชื่อมต่อแล้ว • NovelAI Tier ${tier} • Anlas ${anlas}${bonus ? ` (+${bonus})` : ''} • เจนรูปฟรี: ${unlimited ? 'ได้' : 'ไม่ได้'}`, 'ok');
+            notify('เชื่อมต่อ NovelAI สำเร็จ', 'success');
+            return;
+        }
+
+        setC2State('กำลังเชื่อมต่อและดึงรายชื่อโมเดล...');
+        const url = buildUrl(s.img_url, 'models');
+        const data = await requestJson(url, { method: 'GET', headers: authHeaders(s.img_key) }, 30, '2');
         const list = (Array.isArray(data?.data) ? data.data : Array.isArray(data) ? data : [])
             .map(m => (typeof m === 'string' ? m : m?.id)).filter(Boolean).sort();
-        const datalist = document.getElementById(isLlm ? 'pxi_llm_model_list' : 'pxi_img_model_list');
+        s.img_models = list;
+        populateImageModels();
+        context.saveSettingsDebounced();
+        setC2State(list.length
+            ? `เชื่อมต่อแล้ว • พบ ${list.length} โมเดล — เลือกจากรายการด้านล่าง`
+            : 'เชื่อมต่อได้ แต่ endpoint ไม่ส่งรายชื่อโมเดลมา — พิมพ์ชื่อโมเดลเอง', 'ok');
+        notify(list.length ? `เชื่อมต่อสำเร็จ พบ ${list.length} โมเดล` : 'เชื่อมต่อสำเร็จ แต่ไม่มีรายชื่อโมเดล', 'success');
+    } catch (error) {
+        setC2State(String(error?.message || error), 'error');
+        await showErrorPopup(error);
+    }
+}
+
+/** ดึงรายชื่อโมเดลของ Connection 1 (Connection 2 ใช้ connectC2 แทน) */
+async function fetchModels() {
+    const s = settings();
+    try {
+        const url = buildUrl(s.llm_url, 'models');
+        const data = await requestJson(url, { method: 'GET', headers: authHeaders(s.llm_key) }, 30, '1');
+        const list = (Array.isArray(data?.data) ? data.data : Array.isArray(data) ? data : [])
+            .map(m => (typeof m === 'string' ? m : m?.id)).filter(Boolean).sort();
+        const datalist = document.getElementById('pxi_llm_model_list');
         if (datalist) datalist.innerHTML = list.map(id => `<option value="${String(id).replace(/"/g, '&quot;')}"></option>`).join('');
         notify(`พบ ${list.length} โมเดล`, 'success');
         setStatus(`ดึงรายชื่อโมเดลสำเร็จ (${list.length})`);
@@ -1154,16 +1231,14 @@ async function testConnection(kind) {
             if (!String(result.text || '').trim()) throw new PxiError('ไม่มีข้อความตอบกลับ', { stage: '1', raw: result.raw });
             notify('Connection 1 ใช้งานได้', 'success');
             setStatus('Connection 1 ✓ — ' + String(result.text).trim().slice(0, 60));
-        } else if (s.c2_source === 'nai') {
-            setStatus('กำลังทดสอบ NovelAI (เจนรูปทดสอบ 1 ใบ)...');
-            const image = await stage2NovelAI('1girl, simple background');
-            notify(`NovelAI ใช้งานได้ (${Math.round(image.value.length / 1024)} KB)`, 'success');
-            setStatus('Connection 2 ✓ NovelAI ส่งรูปกลับมาแล้ว');
         } else {
-            setStatus('กำลังทดสอบ Connection 2...');
-            await requestJson(buildUrl(s.img_url, 'models'), { method: 'GET', headers: authHeaders(s.img_key) }, 30, '2');
-            notify('Connection 2 ตอบกลับปกติ', 'success');
-            setStatus('Connection 2 ✓ (endpoint /models ตอบกลับได้)');
+            setStatus('กำลังทดสอบเจนรูป 1 ใบ...');
+            setC2State('กำลังทดสอบเจนรูป 1 ใบ...');
+            const image = await stage2GenerateImage('1girl, solo, simple background');
+            const size = image.kind === 'base64' ? `${Math.round(image.value.length / 1024)} KB` : 'ได้ URL รูป';
+            notify(`Connection 2 เจนรูปได้ (${size})`, 'success');
+            setStatus('Connection 2 ✓ เจนรูปทดสอบสำเร็จ');
+            setC2State(`ทดสอบเจนรูปสำเร็จ (${size})`, 'ok');
         }
     } catch (error) {
         setStatus(String(error?.message || error), true);
@@ -1436,6 +1511,7 @@ function loadSettingsToUi() {
     loadTemplateEditor();
     toggleSourceBlocks();
     populateSizePresets();
+    populateImageModels();
     updateSizeUi();
     updateContextHints();
     const smeaDyn = document.getElementById('pxi_sm_dyn');
@@ -1461,6 +1537,11 @@ function bindEvents() {
             if (key === 'c1_source' || key === 'c2_source') toggleSourceBlocks();
             if (key.startsWith('ctx_') || key === 'llm_max_tokens') updateContextHints();
             if (key === 'size' || key === 'steps' || key === 'anlas_guard') updateSizeUi();
+            if (key === 'img_model') {
+                const select = document.getElementById('pxi_img_model_select');
+                if (select) select.value = (settings().img_models || []).includes(el.value) ? el.value : '';
+            }
+            if (key === 'c2_source') setC2State('ยังไม่ได้เชื่อมต่อ — กรอกค่าด้านล่างแล้วกด "เชื่อมต่อ"');
             context.saveSettingsDebounced();
         });
     }
@@ -1470,10 +1551,19 @@ function bindEvents() {
     document.getElementById('pxi_tpl_reset')?.addEventListener('click', () => resetTemplate(false));
     document.getElementById('pxi_tpl_reset_all')?.addEventListener('click', () => resetTemplate(true));
 
-    document.getElementById('pxi_llm_fetch')?.addEventListener('click', () => fetchModels('llm'));
-    document.getElementById('pxi_img_fetch')?.addEventListener('click', () => fetchModels('img'));
+    document.getElementById('pxi_llm_fetch')?.addEventListener('click', () => fetchModels());
     document.getElementById('pxi_llm_test')?.addEventListener('click', () => testConnection('llm'));
     document.getElementById('pxi_img_test')?.addEventListener('click', () => testConnection('img'));
+    document.getElementById('pxi_c2_connect')?.addEventListener('click', () => connectC2());
+    document.getElementById('pxi_img_model_select')?.addEventListener('change', (event) => {
+        const value = event.target.value;
+        if (!value) return;
+        settings().img_model = value;
+        const field = document.getElementById('pxi_img_model');
+        if (field) field.value = value;
+        getContext().saveSettingsDebounced();
+        setC2State(`เลือกโมเดล ${value} แล้ว`, 'ok');
+    });
     document.getElementById('pxi_nai_save')?.addEventListener('click', () => saveNovelKey());
     document.getElementById('pxi_size_save')?.addEventListener('click', () => applySizeFromField());
     document.getElementById('pxi_size')?.addEventListener('change', () => applySizeFromField());

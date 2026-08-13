@@ -278,3 +278,7 @@
 .pxi-root #pxi_size_hint {
     margin: 6px 0 4px 0;
 }
+
+.pxi-root .pxi-note.pxi-ok {
+    border-left-color: var(--golden, #6bcB77);
+}
