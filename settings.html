@@ -18,6 +18,15 @@
                 <input id="pxi_swipe_regen" type="checkbox">
                 <span>ปัดขวาที่รูปใบสุดท้าย = ตรวจ prompt แล้วเจนใบใหม่</span>
             </label>
+            <label class="checkbox_label" for="pxi_wand_button">
+                <input id="pxi_wand_button" type="checkbox">
+                <span>แสดงปุ่มในเมนู Extensions (ไม้กายสิทธิ์)</span>
+            </label>
+            <label class="checkbox_label" for="pxi_take_over_overswipe">
+                <input id="pxi_take_over_overswipe" type="checkbox">
+                <span>ให้ extension นี้จัดการการปัดรูปคนเดียว <small class="pxi-hint pxi-inline">(ปิด Image Swipe Behavior: Generate ของ ST ที่ทำให้เจนซ้อนด้วยค่าคนละชุด)</small></span>
+            </label>
+            <div id="pxi_swipe_note" class="pxi-note pxi-hidden"></div>
 
             <div class="pxi-row pxi-wrap">
                 <div class="menu_button menu_button_icon" id="pxi_run_portrait"><i class="fa-solid fa-user"></i><span>Portrait</span></div>
@@ -77,11 +86,23 @@
                         </div>
                     </div>
 
-                    <div class="pxi-grid3">
+                    <div class="pxi-grid2">
                         <div>
-                            <label for="pxi_llm_max_tokens">Max tokens</label>
-                            <input id="pxi_llm_max_tokens" class="text_pole" type="number" min="16" max="4096" step="16">
+                            <label for="pxi_llm_max_tokens">เพดานความยาวคำตอบ (tokens)</label>
+                            <input id="pxi_llm_max_tokens" class="text_pole" type="number" min="16" max="8192" step="50">
                         </div>
+                        <div>
+                            <label for="pxi_cot_mode">โหมดคิดก่อนตอบ (CoT)</label>
+                            <select id="pxi_cot_mode" class="text_pole">
+                                <option value="off">ปิด — คายแท็กเลย (เร็วสุด)</option>
+                                <option value="light">เบา — คิดใน &lt;planning&gt; ก่อนในคำตอบเดียว</option>
+                                <option value="heavy">หนัก — วิเคราะห์ฉากก่อน แล้วค่อยเขียนแท็ก (ยิง 2 รอบ)</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="pxi-note">
+                        เพดานความยาวคำตอบไม่ใช่ปริมาณที่จะถูกใช้จริง ตอบสั้นก็จ่ายสั้น แต่ถ้าตั้งต่ำเกินแท็กจะถูกตัดกลางคัน — ฉาก 3-4 ตัวละครควรอยู่ที่ 600 ขึ้นไป<br>
+                        โหมด CoT เบาจะเผื่อโควตาให้อัตโนมัติ 1.8 เท่า • โหมดหนักยิง Connection 1 สองรอบ (ช้าและเปลืองกว่า แต่แม่นที่สุดกับฉากหลายตัวละคร) • ผลวิเคราะห์ดูได้ใน console
                     </div>
 
                     <div class="menu_button menu_button_icon" id="pxi_llm_test"><i class="fa-solid fa-plug"></i><span>ทดสอบ Connection 1</span></div>
@@ -147,9 +168,9 @@
                     </div>
                     <div class="pxi-note">
                         <b>ค่าที่แนะนำ</b><br>
-                        ข้อความล่าสุด <b>3-8</b> (ค่าแนะนำ 4) • ตัด/ข้อความ <b>300-1200</b> (ค่าแนะนำ 600) • เพดานรวม <b>1000-10000</b> (ค่าแนะนำ 4000)<br>
+                        ข้อความล่าสุด <b>0-4</b> (มาตรฐาน 3) • ตัด/ข้อความ <b>400-1500</b> (มาตรฐาน 1200) • เพดานรวม <b>1000-10000</b> (มาตรฐาน 10000)<br>
                         ช่อง "ตัด/ข้อความ" คูณ 3 คือความยาวสูงสุดของข้อความล่าสุด เช่น 600 = ข้อความล่าสุดได้ 1800 ตัวอักษร<br>
-                        ฉากที่มีตัวละครหลายตัวให้เพิ่ม "ตัด/ข้อความ" เป็น 800-1000 และ Max tokens ของ Connection 1 เป็น 500-600 ไม่งั้น prompt จะถูกตัดกลางคัน<br>
+                        ตั้ง "ข้อความล่าสุด" เป็น 1 ไม่มีประโยชน์ เพราะจะส่งข้อความเดียวกันซ้ำสองรอบ (ทั้งใน chat และ lastMessage) ใช้ 0 หรือ 2-4 แทน<br>
                         ถ้าตั้งสูงเกินจน Connection 1 ไม่ยอมตอบหรือช้ามาก ให้ลดเพดานรวมลงก่อนเป็นอย่างแรก
                     </div>
                     <div id="pxi_ctx_hint" class="pxi-note"></div>
@@ -354,29 +375,9 @@
                 </div>
             </div>
 
-            <!-- ============ OUTPUT ============ -->
             <div class="inline-drawer pxi-sub">
                 <div class="inline-drawer-toggle inline-drawer-header">
-                    <b>⑥ Output</b>
-                    <div class="inline-drawer-icon fa-solid fa-circle-chevron-down down"></div>
-                </div>
-                <div class="inline-drawer-content">
-                    <label for="pxi_msg_template">Message template</label>
-                    <input id="pxi_msg_template" class="text_pole" type="text">
-                    <label class="checkbox_label" for="pxi_hide_message">
-                        <input id="pxi_hide_message" type="checkbox">
-                        <span>ซ่อนข้อความรูปจาก prompt ของ AI (is_system)</span>
-                    </label>
-                    <label class="checkbox_label" for="pxi_wand_button">
-                        <input id="pxi_wand_button" type="checkbox">
-                        <span>แสดงปุ่มในเมนู Extensions (ไม้กายสิทธิ์)</span>
-                    </label>
-                </div>
-            </div>
-
-            <div class="inline-drawer pxi-sub">
-                <div class="inline-drawer-toggle inline-drawer-header">
-                    <b>⑦ NovelAI Cheatsheet</b>
+                    <b>⑥ NovelAI Cheatsheet</b>
                     <div class="inline-drawer-icon fa-solid fa-circle-chevron-down down"></div>
                 </div>
                 <div class="inline-drawer-content">

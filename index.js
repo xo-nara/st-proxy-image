@@ -29,6 +29,8 @@ const STYLE_TAIL = `=== STYLE TAIL - ALWAYS END THE PROMPT WITH THIS ===\nAfter 
 
 const BACKGROUND_RULE = `Background - never fall back to an empty studio backdrop:\n- The background MUST be the place the character is in according to the latest message: the room, the furniture and objects around them, the time of day, the weather, the light source. Name them as tags: "bedroom, indoors, night, unmade bed, curtains, lamplight" rather than "simple background".\n- Do not write "simple background", "white background", "grey background", "gradient background" or "transparent background" unless the message really puts the character against a blank wall or void.\n- If the model still tends to flatten it, push back with "-1::simple background ::" and add "location" so it commits to a real place.\n- Only when the message gives no location at all, infer the most likely place from the scene that came before it, and only if that fails choose a plain but real setting such as "indoors, wooden wall, window light".\n- Depth tags are welcome: "depth of field", "blurry background", "bokeh" keep the focus on the character while the place still reads.`;
 
+const POSITION_RULE = `Placement - the model has no coordinate system here, so state placement in words:\n- Emit character groups strictly left to right: the first group is the leftmost figure, the last is the rightmost.\n- Put an explicit side tag inside each group: "on left", "on right", "in the middle", "in the center". With two characters, tag both sides; with three, tag all three.\n- Add a depth tag when they are not side by side: "foreground", "background", "in front of another", "behind another".\n- Prefer relation tags that already carry a position: "lap sitting", "carrying", "piggyback", "shoulder carry", "hug from behind", "back-to-back", "side-by-side", "wall slam", "against wall", "on bed", "sitting on person", "standing behind". These read far more reliably than a bare description of where someone stands.\n- Anchor people to objects in the scene when possible: "sitting on chair", "leaning on table", "standing in doorway". A character tied to furniture lands where the furniture is.\n- Keep every side and depth tag inside the group of the character it describes, never in the scene header.`;
+
 const RATING_RULE = `Rating: prepend "rating:general" for a safe scene, "rating:sensitive" for suggestive, "rating:explicit" for an adult scene. Adult content only for characters who are adults; if a character reads as young, do not write an adult scene for them regardless of what the text says.`;
 
 const ORDER_RULE = 'Tag order: subject count tags first, then character identity and appearance, then clothing, then expression and pose, then action, then camera framing, then setting, background, lighting and mood. Pick exactly one framing tag - never combine conflicting ones such as full body and close-up.';
@@ -37,10 +39,14 @@ const RENAMED_RULE = 'Renamed tags: write "peace sign" not "v", "double peace" n
 
 const DENSITY_RULE = 'Emphasis is numeric: "1.2::tag, tag ::" always closed by a bare "::". Use it in 2 or 3 spots at most - raise the focus of the moment to 1.15-1.3, lower distracting background detail to 0.7-0.9, and use "-1::tag ::" to remove something a character normally wears when the scene says it is gone. Never use the Stable Diffusion form (tag:1.2), never use BREAK, never use the "|" character, and never wrap tags in [ ] or { } - in NovelAI those change the weight instead of grouping.';
 
+const PLANNING_RULE = `Think before you answer. Open your reply with a <planning> block and work through these in order:\n1. Cast - list every character present in the moment by name.\n2. Placement - each one's final position, and the left-to-right order of the frame.\n3. Heights - rank them, and note who looks up and who looks down.\n4. Interaction - who acts on whom, and whether it is source/target or mutual.\n5. Setting - place, time, light, and the franchise style to close on.\nKeep the block short, one line per item. Close it with </planning>, then output the tag list on the next line with nothing else after it. The planning block is discarded and never reaches the image model.`;
+
+const ANALYSIS_SYSTEM = `You are analysing a roleplay scene so that another model can turn it into an image prompt for NovelAI Diffusion V4.5.\nDo not write any tags. Write a short analysis in plain English, one line per item:\n1. Cast - every character physically present in the latest message, by name. Say which work each one comes from if they are an existing character.\n2. Appearance - for each character: hair, eyes, build and height, and what they are wearing RIGHT NOW according to the scene.\n3. Placement - each character's final position, and the left-to-right order they should appear in the frame.\n4. Heights and eye lines - who is taller, who looks up, who looks down, who is seated or kneeling.\n5. Interaction - who is doing what to whom, or state that nobody is touching anyone.\n6. Setting - place, indoors or outdoors, time of day, light, mood, and the notable objects around them.\n7. Framing - the single camera framing that fits, and the franchise art style if there is one.\nBe concrete and brief. No preamble, no tags, no markdown.`;
+
 const DEFAULT_TEMPLATES = {
     free: {
         label: 'Free / Scene (คำสั่งทั่วไป)',
-        sys: `You write image prompts for NovelAI Diffusion V4.5 (anime model).\nRead the roleplay excerpt and describe the CURRENT scene as one image.\n\nCast: include every character the excerpt shows as present, not only the ones you were given blocks for. Count tags must match that cast. Several unnamed people become one crowd tag instead of their own group.\n\n${IDENTITY_RULE}\n\n${HEIGHT_RULE}\n\nWrite each character as one unbroken group wrapped in a numeric-emphasis boundary so their traits cannot mix: "1.05::girl, <identity>, <hair>, <eyes>, <height and build>, <clothing>, <expression>, <gaze>, <posture>, <action tag> ::". Open with the bare word "girl", "boy" or "other" - numbered count tags live only in the scene header.\n\n${ORDER_RULE}\n${RENAMED_RULE}\n${DENSITY_RULE}\n${RATING_RULE}\n\n${STYLE_TAIL}\n\n35-50 tags total.\n${NAI_RULES}`,
+        sys: `You write image prompts for NovelAI Diffusion V4.5 (anime model).\nRead the roleplay excerpt and describe the CURRENT scene as one image.\n\nCast: include every character the excerpt shows as present, not only the ones you were given blocks for. Count tags must match that cast. Several unnamed people become one crowd tag instead of their own group.\n\n${IDENTITY_RULE}\n\n${HEIGHT_RULE}\n\nWrite each character as one unbroken group wrapped in a numeric-emphasis boundary so their traits cannot mix: "1.05::girl, <identity>, <hair>, <eyes>, <height and build>, <clothing>, <expression>, <gaze>, <posture>, <action tag> ::". Open with the bare word "girl", "boy" or "other" - numbered count tags live only in the scene header.\n\n${ORDER_RULE}\n${RENAMED_RULE}\n${POSITION_RULE}\n${DENSITY_RULE}\n${RATING_RULE}\n\n${STYLE_TAIL}\n\n35-50 tags total.\n${NAI_RULES}`,
     },
     portrait: {
         label: 'Portrait (ตัวละคร)',
@@ -56,7 +62,7 @@ const DEFAULT_TEMPLATES = {
     },
     last: {
         label: 'Last Message (ฉากล่าสุด)',
-        sys: `You write image prompts for NovelAI Diffusion V4.5 (anime model).\nTurn the LATEST message into one image that reads as the whole scene at that instant - who is there, where each of them stands, how tall each of them is next to the others, what they are doing to each other, and what the place looks like around them.\n\n=== STEP 1: BUILD THE CAST ===\nList EVERY character physically present in the latest message, not just the ones you were given blocks for. A character counts as present if the message shows them acting, speaking, being touched, being looked at, or standing in the frame.\n- Side characters, named NPCs, servants, guards, shopkeepers, classmates and rivals all belong in the image if the moment shows them. Several unnamed people become one crowd tag in the header ("crowd", "people", "multiple boys") instead of groups.\n- Leave someone out only if the message shows them absent, off-screen, behind a door, or merely mentioned rather than present.\n- Count tags MUST match this cast. Two women and a man is "2girls, 1boy" - never shrink it to "1girl" just because only one character had an appearance block supplied.\n\n=== STEP 2: RESOLVE POSITIONS ===\nA message often moves people around. Read it start to finish and take each character's FINAL position - where they ended up by the last sentence, not where they began.\n- Note for each character: where they are in the room, how far from the others, whether standing, sitting, kneeling or lying, and what they are on or against.\n- Then decide the left-to-right order of the frame. Character groups are emitted in that order: the first group is the leftmost figure, the last group is the rightmost. This ordering is the main way the model places people, so choose it deliberately.\n- Reinforce the layout with relation tags inside the group of the character they describe: "standing", "sitting", "kneeling", "lying", "sitting on lap", "on person", "behind another", "in front of another", "back-to-back", "side-by-side", "leaning forward", "leaning on person", "foreground", "background".\n- If two characters are apart rather than touching, use distance tags such as "facing each other", "across the room", "looking at another" instead of contact tags.\n\n=== STEP 3: RESOLVE HEIGHTS AND EYE LINES ===\n${HEIGHT_RULE}\n- If the height gap is the point of the moment, raise it once: "1.25::height difference, looking up at another ::".\n\n=== STEP 4: IDENTIFY EACH ONE ===\n${IDENTITY_RULE}\n\nWhere each look comes from, in order:\n1. The latest message - always wins for clothing, hair state, expression, pose, injuries, anything temporary.\n2. The appearance block (main character) and the persona block (user's character), for fixed traits including height and build.\n3. For a side character with no block, build the look from what the message says plus what their identity tag implies. If the message gives nothing, write plain role-appropriate tags rather than skipping them.\n\n=== STEP 5: OUTPUT SHAPE ===\nOne flat comma-separated list in this order:\n\n1. SCENE HEADER - count tags for the whole cast, then the setting: place, indoors or outdoors, time of day, weather, key objects and furniture that anchor the layout, lighting, mood. Then exactly one framing tag wide enough to hold everyone: "wide shot", "full body" and "cowboy shot" work for two or more people and are the ones that actually show a height difference; "from side" helps a layout read clearly; reserve "close-up" and "portrait" for a single figure. Never combine conflicting framing tags.\n\n2. ONE GROUP PER CHARACTER, emitted left to right, each a numeric-emphasis group so the model cannot mix two characters together:\n   "1.05::girl, <identity tags>, <hair>, <eyes>, <height and build>, <skin>, <clothing>, <expression>, <gaze>, <posture and position>, <action tag> ::"\n   - Open with the bare word "girl", "boy" or "other" - never a numbered count tag, those live only in the header.\n   - Close every group with a bare "::" before the next one. Never let one character's tags spill into another group.\n   - Clothing is mandatory. If a character is undressed, say so explicitly or the model will invent an outfit.\n   - The character the moment centres on goes at 1.15; the others stay at 1.05.\n\n=== ACTION TAGS ===\n- Different roles: "source#<action>" on the one performing it, "target#<action>" on the one receiving it. One hugs the other gives source#hug and target#hug.\n- Reciprocal: the same "mutual#<action>" written identically in both groups - mutual#hug, mutual#kissing.\n- Test: if swapping the two characters changes the meaning, use source/target; if it stays the same, use mutual.\n- One action tag per character, except mutual# which is shared. Put it last inside the group. Never rename source, target or mutual, never use them in a solo image, never use them for something done alone - that is a plain tag such as "sitting" or "drinking".\n- With three or more characters, tag only the pair actually interacting; give the bystanders ordinary posture and gaze tags.\n- If nobody is touching anyone, omit action tags entirely.\n\n=== SYNTAX ===\n${DENSITY_RULE}\n${RENAMED_RULE}\n${RATING_RULE}\n\n${STYLE_TAIL}\n\nAt most 4 character groups; if the moment holds more, keep the ones the message focuses on and cover the rest with a crowd tag.\n40-55 tags total.\n${NAI_RULES}`,
+        sys: `You write image prompts for NovelAI Diffusion V4.5 (anime model).\nTurn the LATEST message into one image that reads as the whole scene at that instant - who is there, where each of them stands, how tall each of them is next to the others, what they are doing to each other, and what the place looks like around them.\n\n=== STEP 1: BUILD THE CAST ===\nList EVERY character physically present in the latest message, not just the ones you were given blocks for. A character counts as present if the message shows them acting, speaking, being touched, being looked at, or standing in the frame.\n- Side characters, named NPCs, servants, guards, shopkeepers, classmates and rivals all belong in the image if the moment shows them. Several unnamed people become one crowd tag in the header ("crowd", "people", "multiple boys") instead of groups.\n- Leave someone out only if the message shows them absent, off-screen, behind a door, or merely mentioned rather than present.\n- Count tags MUST match this cast. Two women and a man is "2girls, 1boy" - never shrink it to "1girl" just because only one character had an appearance block supplied.\n\n=== STEP 2: RESOLVE POSITIONS ===\nA message often moves people around. Read it start to finish and take each character's FINAL position - where they ended up by the last sentence, not where they began.\n- Note for each character: where they are in the room, how far from the others, whether standing, sitting, kneeling or lying, and what they are on or against.\n- Then decide the left-to-right order of the frame. Character groups are emitted in that order: the first group is the leftmost figure, the last group is the rightmost. This ordering is the main way the model places people, so choose it deliberately.\n- Reinforce the layout with relation tags inside the group of the character they describe: "standing", "sitting", "kneeling", "lying", "sitting on lap", "on person", "behind another", "in front of another", "back-to-back", "side-by-side", "leaning forward", "leaning on person", "foreground", "background".\n- If two characters are apart rather than touching, use distance tags such as "facing each other", "across the room", "looking at another" instead of contact tags.\n\n=== STEP 3: RESOLVE HEIGHTS AND EYE LINES ===\n${HEIGHT_RULE}\n- If the height gap is the point of the moment, raise it once: "1.25::height difference, looking up at another ::".\n\n=== STEP 4: IDENTIFY EACH ONE ===\n${IDENTITY_RULE}\n\nWhere each look comes from, in order:\n1. The latest message - always wins for clothing, hair state, expression, pose, injuries, anything temporary.\n2. The appearance block (main character) and the persona block (user's character), for fixed traits including height and build.\n3. For a side character with no block, build the look from what the message says plus what their identity tag implies. If the message gives nothing, write plain role-appropriate tags rather than skipping them.\n\n=== STEP 5: OUTPUT SHAPE ===\nOne flat comma-separated list in this order:\n\n1. SCENE HEADER - count tags for the whole cast, then the setting: place, indoors or outdoors, time of day, weather, key objects and furniture that anchor the layout, lighting, mood. Then exactly one framing tag wide enough to hold everyone: "wide shot", "full body" and "cowboy shot" work for two or more people and are the ones that actually show a height difference; "from side" helps a layout read clearly; reserve "close-up" and "portrait" for a single figure. Never combine conflicting framing tags.\n\n2. ONE GROUP PER CHARACTER, emitted left to right, each a numeric-emphasis group so the model cannot mix two characters together:\n   "1.05::girl, <identity tags>, <hair>, <eyes>, <height and build>, <skin>, <clothing>, <expression>, <gaze>, <posture and position>, <action tag> ::"\n   - Open with the bare word "girl", "boy" or "other" - never a numbered count tag, those live only in the header.\n   - Close every group with a bare "::" before the next one. Never let one character's tags spill into another group.\n   - Clothing is mandatory. If a character is undressed, say so explicitly or the model will invent an outfit.\n   - The character the moment centres on goes at 1.15; the others stay at 1.05.\n\n=== PLACEMENT ===\n${POSITION_RULE}\n\n=== ACTION TAGS ===\n- Different roles: "source#<action>" on the one performing it, "target#<action>" on the one receiving it. One hugs the other gives source#hug and target#hug.\n- Reciprocal: the same "mutual#<action>" written identically in both groups - mutual#hug, mutual#kissing.\n- Test: if swapping the two characters changes the meaning, use source/target; if it stays the same, use mutual.\n- One action tag per character, except mutual# which is shared. Put it last inside the group. Never rename source, target or mutual, never use them in a solo image, never use them for something done alone - that is a plain tag such as "sitting" or "drinking".\n- With three or more characters, tag only the pair actually interacting; give the bystanders ordinary posture and gaze tags.\n- If nobody is touching anyone, omit action tags entirely.\n\n=== SYNTAX ===\n${DENSITY_RULE}\n${RENAMED_RULE}\n${RATING_RULE}\n\n${STYLE_TAIL}\n\nAt most 4 character groups; if the moment holds more, keep the ones the message focuses on and cover the rest with a crowd tag.\n40-55 tags total.\n${NAI_RULES}`,
     },
 };
 
@@ -80,6 +86,7 @@ const defaultSettings = {
     enabled: true,
     edit_before: true,
     swipe_regen: true,
+    take_over_overswipe: true,
 
     // Connection 1
     c1_source: 'profile',
@@ -87,14 +94,15 @@ const defaultSettings = {
     llm_url: '',
     llm_key: '',
     llm_model: '',
-    llm_max_tokens: 350,
+    llm_max_tokens: 600,
+    cot_mode: 'off',
     llm_temp: 0.7,
     llm_timeout: 90,
 
     // Context budget
-    ctx_messages: 6,
-    ctx_chars: 350,
-    ctx_total: 3000,
+    ctx_messages: 3,
+    ctx_chars: 1200,
+    ctx_total: 10000,
     strip_html: true,
     strip_system: true,
 
@@ -135,8 +143,6 @@ const defaultSettings = {
     extra_instruction: '',
 
     // Output
-    msg_template: '{{prompt}}',
-    hide_message: false,
     wand_button: true,
 };
 
@@ -144,12 +150,14 @@ const BINDINGS = [
     ['pxi_enabled', 'enabled', 'bool'],
     ['pxi_edit_before', 'edit_before', 'bool'],
     ['pxi_swipe_regen', 'swipe_regen', 'bool'],
+    ['pxi_take_over_overswipe', 'take_over_overswipe', 'bool'],
     ['pxi_c1_source', 'c1_source', 'text'],
     ['pxi_c1_profile', 'c1_profile', 'text'],
     ['pxi_llm_url', 'llm_url', 'text'],
     ['pxi_llm_key', 'llm_key', 'text'],
     ['pxi_llm_model', 'llm_model', 'text'],
     ['pxi_llm_max_tokens', 'llm_max_tokens', 'number'],
+    ['pxi_cot_mode', 'cot_mode', 'text'],
     ['pxi_llm_temp', 'llm_temp', 'number'],
     ['pxi_llm_timeout', 'llm_timeout', 'number'],
     ['pxi_ctx_messages', 'ctx_messages', 'number'],
@@ -181,13 +189,12 @@ const BINDINGS = [
     ['pxi_prefix', 'prefix', 'text'],
     ['pxi_suffix', 'suffix', 'text'],
     ['pxi_negative', 'negative', 'text'],
-    ['pxi_msg_template', 'msg_template', 'text'],
-    ['pxi_hide_message', 'hide_message', 'bool'],
     ['pxi_wand_button', 'wand_button', 'bool'],
     ['pxi_extra_instruction', 'extra_instruction', 'text'],
 ];
 
 let isBusy = false;
+let lastAnalysis = '';
 let isSwipePromptOpen = false;
 let connectionService = null;
 
@@ -209,6 +216,9 @@ function initSettings() {
     delete s.templates.yourself;
     delete s.user_use_default;
     s.sm_dyn = false; // ปิดถาวรตั้งแต่ 2.6.0
+    delete s.msg_template;  // ยกเลิกตั้งแต่ 2.11.0 (ข้อความ = prompt เสมอ)
+    delete s.hide_message;  // ยกเลิกตั้งแต่ 2.11.0 (ซ่อนจาก AI เสมอ)
+    if (!['off', 'light', 'heavy'].includes(s.cot_mode)) s.cot_mode = 'off';
     if (!Array.isArray(s.img_models)) s.img_models = [];
     if (!['auto', 'path', 'exact'].includes(s.img_url_mode)) s.img_url_mode = 'auto';
     for (const mode of MODES) {
@@ -606,10 +616,20 @@ async function buildStage1Messages(mode = 'free', extra = '') {
     userMessage += '\n\nWrite the image prompt now.';
 
     const messages = [];
-    const system = substitute(template.sys).trim();
+    let system = substitute(template.sys).trim();
+    if (settings().cot_mode === 'light') system = `${system}\n\n${PLANNING_RULE}`;
     if (system) messages.push({ role: 'system', content: system });
     messages.push({ role: 'user', content: userMessage.trim() || macros.chat });
     return messages;
+}
+
+/** รอบวิเคราะห์ของโหมด CoT หนัก */
+async function buildAnalysisMessages(mode, extra) {
+    const macros = await buildMacros(extra);
+    return [
+        { role: 'system', content: ANALYSIS_SYSTEM },
+        { role: 'user', content: buildAutoUserMessage(mode, macros) + '\n\nAnalyse the scene now.' },
+    ];
 }
 
 /* ================================================================== */
@@ -619,10 +639,13 @@ async function buildStage1Messages(mode = 'free', extra = '') {
 function normalizePrompt(text) {
     let out = String(text || '').trim();
     out = out.replace(/^```[a-z]*\s*|\s*```$/gi, '');
-    out = out.replace(/<(think|thinking|reasoning)[\s\S]*?<\/\1>/gi, '');
+    out = out.replace(/<(think|thinking|reasoning|planning|plan|analysis)[\s\S]*?<\/\1>/gi, '');
+    out = out.replace(/^[\s\S]*<\/(?:think|thinking|reasoning|planning|plan|analysis)>/i, '');
     out = out.replace(/^\s*(prompt|image prompt|output)\s*[:：]\s*/i, '');
     out = out.replace(/^["'“”]+|["'“”]+$/g, '');
-    return out.replace(/\s*\n+\s*/g, ', ').replace(/\s*,\s*,+/g, ', ').trim();
+    out = out.replace(/\s*\n+\s*/g, ', ').replace(/\s*,\s*,+/g, ', ');
+    // ตัดคอมมาที่ค้างหัวหรือท้ายหลังตัดบล็อก planning ออก
+    return out.replace(/^[\s,]+|[\s,]+$/g, '').trim();
 }
 
 const REFUSAL_PATTERN = /\b(i (can'?t|cannot|won'?t)|i'?m (sorry|unable)|as an ai|against my|cannot assist)\b/i;
@@ -675,7 +698,7 @@ async function stage1ViaProfile(messages) {
 
     if (service && profileId) {
         try {
-            const result = await service.sendRequest(profileId, messages, Math.max(16, Number(s.llm_max_tokens) || 350), {
+            const result = await service.sendRequest(profileId, messages, tokenBudget(), {
                 stream: false,
                 extractData: true,
                 includePreset: false,
@@ -711,7 +734,7 @@ async function stage1ViaProfile(messages) {
         quietPrompt,
         quietToLoud: false,
         skipWIAN: true,
-        responseLength: Math.max(16, Number(s.llm_max_tokens) || 350),
+        responseLength: tokenBudget(),
         quietName: 'PromptMaker',
     });
     return { text, raw: String(text || '').slice(0, 800), finish: '' };
@@ -726,7 +749,7 @@ async function stage1ViaCustom(messages) {
         body: JSON.stringify({
             model: s.llm_model || undefined,
             messages,
-            max_tokens: Math.max(16, Number(s.llm_max_tokens) || 350),
+            max_tokens: tokenBudget(),
             temperature: Number.isFinite(Number(s.llm_temp)) ? Number(s.llm_temp) : 0.7,
             stream: false,
         }),
@@ -738,10 +761,39 @@ async function stage1ViaCustom(messages) {
     return { text, raw: JSON.stringify(data).slice(0, 1200), finish: choice?.finish_reason || choice?.native_finish_reason };
 }
 
+function tokenBudget() {
+    const s = settings();
+    const base = Math.max(16, Number(s.llm_max_tokens) || 600);
+    return s.cot_mode === 'light' ? Math.round(base * 1.8) : base;
+}
+
+async function callStage1(messages) {
+    const s = settings();
+    return s.c1_source === 'custom' ? await stage1ViaCustom(messages) : await stage1ViaProfile(messages);
+}
+
 async function stage1GeneratePrompt(mode, extra) {
     const s = settings();
-    const messages = await buildStage1Messages(mode, extra);
-    const result = s.c1_source === 'custom' ? await stage1ViaCustom(messages) : await stage1ViaProfile(messages);
+    let extraText = String(extra || '');
+
+    if (s.cot_mode === 'heavy') {
+        setStatus('① รอบที่ 1 — กำลังวิเคราะห์ฉาก...');
+        const analysis = await callStage1(await buildAnalysisMessages(mode, extraText));
+        const notes = String(analysis.text || '').trim();
+        if (notes) {
+            console.log(LOG, 'scene analysis', notes);
+            lastAnalysis = notes;
+            extraText = `${extraText}\n\n--- Scene analysis (already worked out, follow it) ---\n${notes}`.trim();
+        }
+        setStatus('① รอบที่ 2 — กำลังเขียนแท็ก...');
+    }
+
+    const messages = await buildStage1Messages(mode, extraText);
+    const result = await callStage1(messages);
+    if (s.cot_mode === 'light') {
+        const planning = String(result.text || '').match(/<planning>([\s\S]*?)<\/planning>/i);
+        if (planning) { lastAnalysis = planning[1].trim(); console.log(LOG, 'planning', lastAnalysis); }
+    }
     const prompt = normalizePrompt(result.text);
     assertUsablePrompt(prompt, result.raw, result.finish);
     return prompt;
@@ -963,16 +1015,7 @@ function supportsMediaArray() {
 
 async function postImageMessage(imagePath, prompt, mode) {
     const context = getContext();
-    const s = settings();
     const name = context.name2 || 'System';
-    let text = s.msg_template || '{{prompt}}';
-    try {
-        text = context.substituteParamsExtended
-            ? context.substituteParamsExtended(text, { prompt, char: name })
-            : text.replace(/{{prompt}}/gi, prompt);
-    } catch {
-        text = text.replace(/{{prompt}}/gi, prompt);
-    }
 
     const extra = { inline_image: false, pxi: { prompt, mode } };
     if (supportsMediaArray()) {
@@ -987,9 +1030,10 @@ async function postImageMessage(imagePath, prompt, mode) {
     const message = {
         name,
         is_user: false,
-        is_system: !!s.hide_message,
+        // ซ่อนจาก prompt ของ AI เสมอ (เทียบเท่า /hide) แท็กภาพไม่ควรถูกป้อนกลับเข้าบทสนทนา
+        is_system: true,
         send_date: context.humanizedDateTime ? context.humanizedDateTime() : new Date().toLocaleString(),
-        mes: text,
+        mes: prompt,
         extra,
     };
 
@@ -1021,6 +1065,7 @@ async function runPipeline({ mode = 'free', rawPrompt = '', extra = '', quiet = 
     try {
         let prompt = String(rawPrompt || '').trim();
         const fromStage1 = !prompt;
+        lastAnalysis = '';
 
         if (fromStage1) {
             setStatus(`① กำลังสร้าง prompt (${mode})...`);
@@ -1030,7 +1075,10 @@ async function runPipeline({ mode = 'free', rawPrompt = '', extra = '', quiet = 
 
         if (fromStage1 && s.edit_before) {
             setStatus('⇄ รอตรวจ/แก้ prompt...');
-            const edited = await editPrompt(prompt);
+            const title = lastAnalysis
+                ? 'แก้ prompt ก่อนส่งไป Connection 2 (ดูผลวิเคราะห์ฉากได้ใน console)'
+                : 'แก้ prompt ก่อนส่งไป Connection 2';
+            const edited = await editPrompt(prompt, title);
             if (!edited) { setStatus('ยกเลิกแล้ว'); return null; }
             prompt = edited;
         }
@@ -1056,9 +1104,51 @@ async function runPipeline({ mode = 'free', rawPrompt = '', extra = '', quiet = 
 /* Swipe → review & regenerate                                         */
 /* ================================================================== */
 
+/**
+ * ST มี Image Generation ในตัวที่ดักปัดรูปเหมือนกัน ถ้า "Image Swipe Behavior"
+ * ตั้งเป็น generate มันจะเจนรูปซ้อนด้วยค่าของมันเอง (ขนาด, negative, upscale คนละชุด)
+ * ฟังก์ชันนี้สลับค่านั้นเป็น rollover เพื่อให้เหลือ extension นี้ทำงานคนเดียว
+ */
+function resolveOverswipeConflict({ silent = false } = {}) {
+    const s = settings();
+    const context = getContext();
+    const power = context.powerUserSettings;
+    if (!power || typeof power !== 'object') return false;
+    const conflicted = power.image_overswipe === 'generate';
+
+    const note = document.getElementById('pxi_swipe_note');
+    if (!s.swipe_regen || !s.take_over_overswipe) {
+        if (note) {
+            note.classList.toggle('pxi-hidden', !conflicted || !s.swipe_regen);
+            note.textContent = conflicted
+                ? 'ตอนนี้ Image Generation ในตัวของ ST จะเจนรูปซ้อนตอนปัดด้วย (คนละชุดค่ากับที่ตั้งไว้ที่นี่) — ติ๊ก "ให้ extension นี้จัดการการปัดรูปคนเดียว" เพื่อปิด'
+                : '';
+        }
+        return false;
+    }
+
+    if (!conflicted) {
+        note?.classList.add('pxi-hidden');
+        return false;
+    }
+
+    power.image_overswipe = 'rollover';
+    try { context.saveSettingsDebounced(); } catch { /* ignore */ }
+    if (note) {
+        note.classList.remove('pxi-hidden');
+        note.textContent = 'ปิด "Image Swipe Behavior: Generate" ของ ST ให้แล้ว — การปัดรูปจะใช้ค่าของ extension นี้เท่านั้น';
+    }
+    if (!silent) {
+        notify('ปิดการเจนซ้ำของ Image Generation ในตัว ST ให้แล้ว', 'success');
+        setStatus('พบว่า ST ตั้ง Image Swipe Behavior เป็น Generate อยู่ — เปลี่ยนเป็น Rollover ให้แล้วเพื่อไม่ให้เจนซ้อนกัน');
+    }
+    return true;
+}
+
 async function onImageSwiped({ message, direction }) {
     const s = settings();
     if (!s.enabled || !s.swipe_regen) return;
+    resolveOverswipeConflict({ silent: true });
     if (direction !== 'right') return;
     if (!message?.extra?.pxi) return;
     if (isBusy) return;
@@ -1670,17 +1760,22 @@ function updateContextHints() {
     const tokens = Math.ceil((budget + lastCap + 2600) / 3.6);
 
     const warnings = [];
-    if (perMessage < 300) warnings.push(`ตัด/ข้อความ ${perMessage} น้อยไป — ข้อความล่าสุดเหลือแค่ ${lastCap} ตัวอักษร ฉากที่มีหลายตัวละครจะถูกตัดหัวทิ้ง แนะนำ 600`);
+    if (perMessage < 400) warnings.push(`ตัด/ข้อความ ${perMessage} น้อยไป — ข้อความล่าสุดเหลือแค่ ${lastCap} ตัวอักษร ฉากที่มีหลายตัวละครจะถูกตัดหัวทิ้ง แนะนำ 1200`);
     if (perMessage > 1200) warnings.push(`ตัด/ข้อความ ${perMessage} สูงมาก — ข้อความล่าสุดกินไป ${lastCap} ตัวอักษร เสี่ยง Connection 1 ตอบช้าหรือไม่ยอมตอบ แนะนำไม่เกิน 1200`);
     if (total < 1000) warnings.push('เพดานรวมต่ำกว่า 1000 — ฉากก่อนหน้าจะหายเกือบหมด แนะนำอย่างน้อย 1000');
     if (total > 10000) warnings.push('เพดานรวมเกิน 10000 — เกินความจำเป็นและเสี่ยงชน context limit ของโปรไฟล์ แนะนำไม่เกิน 10000');
     if (messages === 0) warnings.push('ข้อความล่าสุด = 0 จะไม่ส่งบทสนทนาไปเลย โหมด Last Message จะเหลือแค่ข้อความเดียว');
-    if (messages > 12) warnings.push(`ข้อความล่าสุด ${messages} เยอะเกินจำเป็น — โหมดเจนรูปใช้แค่ฉากปัจจุบัน แนะนำ 3-8`);
-    if (Number(s.llm_max_tokens) < 200) warnings.push('Max tokens ของ Connection 1 ต่ำกว่า 200 — prompt ที่มีหลายตัวละครจะถูกตัดกลางคัน แนะนำ 350-600');
+    if (messages > 8) warnings.push(`ข้อความล่าสุด ${messages} เยอะเกินจำเป็น — โหมดเจนรูปใช้แค่ฉากปัจจุบัน แนะนำ 2-4`);
+    if (messages === 1) warnings.push('ข้อความล่าสุด = 1 จะส่งข้อความเดียวกันซ้ำสองรอบ (ทั้งใน chat และ lastMessage) — ใช้ 0 ถ้าไม่ต้องการบริบท หรือ 2-4 ถ้าต้องการ');
+    const answerBudget = Number(s.llm_max_tokens) || 600;
+    if (answerBudget < 400) warnings.push(`เพดานความยาวคำตอบ ${answerBudget} ต่ำไป — prompt ที่มีหลายตัวละครจะถูกตัดกลางคัน แนะนำ 600 ขึ้นไป`);
+    if (s.cot_mode === 'heavy' && answerBudget < 600) warnings.push('โหมด CoT หนักต้องการที่ให้รอบวิเคราะห์ด้วย — ตั้งเพดานความยาวคำตอบอย่างน้อย 600');
 
     el.textContent = '';
     const summary = document.createElement('div');
-    summary.textContent = `งบจริง ≈ ${budget} ตัวอักษรจากบทสนทนา + ข้อความล่าสุดสูงสุด ${lastCap} ตัวอักษร รวมกับ template แล้วราว ${tokens} tokens`;
+    const cotNote = s.cot_mode === 'heavy' ? ' • CoT หนัก = ยิง 2 รอบ'
+        : s.cot_mode === 'light' ? ' • CoT เบา = เผื่อคำตอบ 1.8 เท่า' : '';
+    summary.textContent = `งบจริง ≈ ${budget} ตัวอักษรจากบทสนทนา + ข้อความล่าสุดสูงสุด ${lastCap} ตัวอักษร รวมกับ template แล้วราว ${tokens} tokens${cotNote}`;
     el.append(summary);
     for (const warning of warnings) {
         const line = document.createElement('div');
@@ -1704,6 +1799,7 @@ function loadSettingsToUi() {
     populateSizePresets();
     populateImageModels();
     updateUrlModeUi();
+    resolveOverswipeConflict({ silent: true });
     updateSizeUi();
     updateContextHints();
     const smeaDyn = document.getElementById('pxi_sm_dyn');
@@ -1727,12 +1823,13 @@ function bindEvents() {
             else s[key] = el.value;
             if (key === 'wand_button') updateWandButton();
             if (key === 'c1_source' || key === 'c2_source') toggleSourceBlocks();
-            if (key.startsWith('ctx_') || key === 'llm_max_tokens') updateContextHints();
+            if (key.startsWith('ctx_') || key === 'llm_max_tokens' || key === 'cot_mode') updateContextHints();
             if (key === 'size' || key === 'steps' || key === 'anlas_guard') updateSizeUi();
             if (key === 'img_model') {
                 const select = document.getElementById('pxi_img_model_select');
                 if (select) select.value = (settings().img_models || []).includes(el.value) ? el.value : '';
             }
+            if (key === 'swipe_regen' || key === 'take_over_overswipe') resolveOverswipeConflict();
             if (key === 'c2_source') setC2State('ยังไม่ได้เชื่อมต่อ — กรอกค่าด้านล่างแล้วกด "เชื่อมต่อ"');
             if (key === 'img_url' || key === 'img_url_mode' || key === 'img_gen_path' || key === 'img_models_path') updateUrlModeUi();
             context.saveSettingsDebounced();
@@ -1965,6 +2062,7 @@ jQuery(async () => {
         renderDocsButtons();
         updateWandButton();
         registerSlashCommands();
+        resolveOverswipeConflict({ silent: true });
 
         const context = getContext();
         const imageSwipedEvent = context.eventTypes?.IMAGE_SWIPED;
