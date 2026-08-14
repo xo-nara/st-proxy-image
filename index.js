@@ -105,6 +105,9 @@ const defaultSettings = {
     img_url: '',
     img_key: '',
     img_model: '',
+    img_url_mode: 'auto',
+    img_gen_path: 'images/generations',
+    img_models_path: 'models',
     img_models: [],
     img_format: 'b64_json',
     img_timeout: 180,
@@ -159,6 +162,9 @@ const BINDINGS = [
     ['pxi_anlas_guard', 'anlas_guard', 'bool'],
     ['pxi_img_url', 'img_url', 'text'],
     ['pxi_img_key', 'img_key', 'text'],
+    ['pxi_img_url_mode', 'img_url_mode', 'text'],
+    ['pxi_img_gen_path', 'img_gen_path', 'text'],
+    ['pxi_img_models_path', 'img_models_path', 'text'],
     ['pxi_img_model', 'img_model', 'text'],
     ['pxi_img_format', 'img_format', 'text'],
     ['pxi_img_timeout', 'img_timeout', 'number'],
@@ -204,6 +210,7 @@ function initSettings() {
     delete s.user_use_default;
     s.sm_dyn = false; // ปิดถาวรตั้งแต่ 2.6.0
     if (!Array.isArray(s.img_models)) s.img_models = [];
+    if (!['auto', 'path', 'exact'].includes(s.img_url_mode)) s.img_url_mode = 'auto';
     for (const mode of MODES) {
         if (!s.templates[mode] || typeof s.templates[mode] !== 'object') s.templates[mode] = defaultTemplate(mode);
         if (typeof s.templates[mode].sys !== 'string') s.templates[mode].sys = DEFAULT_TEMPLATES[mode].sys;
@@ -251,7 +258,16 @@ function hintsForStatus(stage, status, raw) {
     else if (status === 400) out.push('พารามิเตอร์ไม่ถูกใจ endpoint — เช็คชื่อโมเดล ขนาดภาพ หรือ Extra body JSON');
     if (status === 401 || status === 403) out.push('API key ผิด หมดอายุ หรือไม่มีสิทธิ์ใช้โมเดลนี้');
     if (status === 402) out.push('เครดิต/Anlas ไม่พอ หรือ subscription หมดอายุ');
-    if (status === 404) out.push('ไม่พบ endpoint — เช็คว่า Base URL ลงท้าย /v1 ถูกต้องไหม');
+    if (status === 404) {
+        out.push('ไม่พบ endpoint ที่ URL นี้');
+        if (stage === '2' && settings().c2_source === 'custom') {
+            out.push('ถ้า /models ตอบ 200 ได้แต่ตัวเจนรูป 404 แปลว่า proxy ช่องนั้นยังไม่ได้เปิด endpoint เจนรูปแบบ OpenAI ถึงจะมีชื่อโมเดลรูปอยู่ในลิสต์ก็ตาม — ต้องให้คนดูแล proxy เปิดให้ หรือถามว่า path จริงคืออะไร');
+            out.push('ถ้ารู้ path จริงแล้ว ให้เปลี่ยน "โหมด URL" เป็น "กำหนด path เอง" หรือ "ใช้ URL นี้ตรง ๆ"');
+            out.push('กดปุ่ม "ค้นหา endpoint" ในหมวด Connection 2 เพื่อให้ระบบไล่ยิง path ที่พบบ่อยแล้วบอกว่าอันไหนมีอยู่จริง');
+        } else {
+            out.push('เช็คว่า Base URL ลงท้าย /v1 ถูกต้องไหม');
+        }
+    }
     if (status === 429) out.push('ยิงถี่เกินหรือคิวเต็ม — เว้น 10-30 วินาทีแล้วลองใหม่ (NovelAI จำกัดงานพร้อมกันต่อบัญชี)');
     if (status >= 500) {
         if (isNai) out.push('เซิร์ฟเวอร์ ST ตีกลับ 500 = NovelAI ปฏิเสธคำขอ ดูเหตุผลจริงได้ที่คอนโซลของ SillyTavern (มักเป็นคีย์ผิด, Anlas หมด, ขนาด/steps เกินโควตา หรือคิวชนกัน)');
@@ -319,13 +335,49 @@ async function showErrorPopup(error) {
 /* HTTP helpers                                                        */
 /* ================================================================== */
 
+const KNOWN_ENDPOINTS = /\/(chat\/completions|completions|images\/generations|images\/edits|models)$/i;
+
 function buildUrl(base, endpoint) {
-    let url = String(base || '').trim().replace(/\s+/g, '').replace(/\/+$/, '');
+    const url = String(base || '').trim().replace(/\s+/g, '').replace(/\/+$/, '');
     if (!url) throw new PxiError('ยังไม่ได้ตั้งค่า Base URL', { stage: '2' });
-    if (url.toLowerCase().endsWith('/' + endpoint)) return url;
-    url = url.replace(/\/(chat\/completions|completions|images\/generations|models)$/i, '');
-    if (/\/v\d+(?:[a-z]*)$/i.test(url)) return `${url}/${endpoint}`;
-    return `${url}/v1/${endpoint}`;
+    if (url.toLowerCase().endsWith('/' + endpoint.toLowerCase())) return url;
+
+    // ตัดเฉพาะ endpoint มาตรฐานที่ผู้ใช้เผลอวางมาเต็ม ๆ แล้วประกอบใหม่จาก base เดิม
+    const trimmed = url.replace(KNOWN_ENDPOINTS, '');
+    if (/\/v\d+[a-z]*$/i.test(trimmed)) return joinUrl(trimmed, endpoint);
+    return joinUrl(trimmed, `v1/${endpoint}`);
+}
+
+function joinUrl(base, path) {
+    const left = String(base || '').replace(/\/+$/, '');
+    const right = String(path || '').trim().replace(/^\/+/, '');
+    return right ? `${left}/${right}` : left;
+}
+
+/**
+ * ประกอบ URL ของ Connection 2 ตามโหมดที่เลือก
+ * auto  = เติม /v1 ให้เมื่อยังไม่มี แล้วต่อ path มาตรฐาน
+ * path  = ต่อ path ที่ผู้ใช้กรอกเอง โดยไม่เติมอะไรทั้งสิ้น
+ * exact = ยิงไปที่ URL นั้นตรง ๆ
+ */
+function resolveImageUrl(kind) {
+    const s = settings();
+    const base = String(s.img_url || '').trim().replace(/\s+/g, '').replace(/\/+$/, '');
+    if (!base) throw new PxiError('ยังไม่ได้ตั้งค่า Base URL ของ Connection 2', { stage: '2' });
+    const mode = s.img_url_mode || 'auto';
+
+    if (mode === 'exact') {
+        if (kind === 'models') return null;
+        return base;
+    }
+
+    if (mode === 'path') {
+        const path = kind === 'models' ? s.img_models_path : s.img_gen_path;
+        if (kind === 'models' && !String(path || '').trim()) return null;
+        return joinUrl(base, path);
+    }
+
+    return buildUrl(base, kind === 'models' ? 'models' : 'images/generations');
 }
 
 function authHeaders(key) {
@@ -338,7 +390,27 @@ function authHeaders(key) {
     return headers;
 }
 
+/** เบราว์เซอร์บล็อก http:// เมื่อหน้าเว็บเป็น https:// (mixed content) — ตรวจก่อนยิงเพื่อให้ error อ่านรู้เรื่อง */
+function assertReachableScheme(url, stage) {
+    try {
+        const target = new URL(url, location.href);
+        if (location.protocol === 'https:' && target.protocol === 'http:') {
+            throw new PxiError('เบราว์เซอร์บล็อกคำขอนี้ (mixed content)', {
+                stage,
+                hints: [
+                    `หน้า SillyTavern เปิดผ่าน https:// แต่ URL ปลายทางเป็น http:// — เบราว์เซอร์จะบล็อกทิ้งก่อนถึงเซิร์ฟเวอร์เสมอ`,
+                    'แก้ด้วยการเปลี่ยน Base URL เป็น https:// (ถ้า proxy รองรับ) หรือเปิด SillyTavern ผ่าน http:// แทน',
+                    'ถ้า proxy เปิดเฉพาะพอร์ตแปลก ๆ ผ่าน http ให้หา endpoint แบบ https ของเจ้านั้นมาใช้',
+                ],
+            });
+        }
+    } catch (error) {
+        if (error instanceof PxiError) throw error;
+    }
+}
+
 async function requestRaw(url, options, timeoutSec, stage) {
+    assertReachableScheme(url, stage);
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), Math.max(5, Number(timeoutSec) || 60) * 1000);
     try {
@@ -830,7 +902,7 @@ async function stage2NovelAI(prompt) {
 
 async function stage2Custom(prompt) {
     const s = settings();
-    const url = buildUrl(s.img_url, 'images/generations');
+    const url = resolveImageUrl('generate');
     const { width, height } = parseSize();
     console.log(LOG, 'custom image request', { url, width, height, model: s.img_model });
     const body = {
@@ -1185,8 +1257,17 @@ async function connectC2() {
             return;
         }
 
+        const url = resolveImageUrl('models');
+        if (!url) {
+            const target = resolveImageUrl('generate');
+            s.img_models = [];
+            populateImageModels();
+            context.saveSettingsDebounced();
+            setC2State(`โหมดนี้ไม่ดึงรายชื่อโมเดล — จะยิงไปที่ ${target} โดยตรง ใช้ปุ่ม "ทดสอบเจนรูป" เพื่อยืนยัน`, 'ok');
+            notify('ตั้งค่า URL แล้ว ใช้ปุ่มทดสอบเจนรูปเพื่อยืนยัน', 'success');
+            return;
+        }
         setC2State('กำลังเชื่อมต่อและดึงรายชื่อโมเดล...');
-        const url = buildUrl(s.img_url, 'models');
         const data = await requestJson(url, { method: 'GET', headers: authHeaders(s.img_key) }, 30, '2');
         const list = (Array.isArray(data?.data) ? data.data : Array.isArray(data) ? data : [])
             .map(m => (typeof m === 'string' ? m : m?.id)).filter(Boolean).sort();
@@ -1204,6 +1285,83 @@ async function connectC2() {
 }
 
 /** ดึงรายชื่อโมเดลของ Connection 1 (Connection 2 ใช้ connectC2 แทน) */
+const ENDPOINT_CANDIDATES = [
+    'images/generations',
+    'v1/images/generations',
+    'images/generation',
+    'image/generations',
+    'generate',
+    'generate-image',
+    'ai/generate-image',
+    'txt2img',
+    'sdapi/v1/txt2img',
+    'v1/txt2img',
+    'images',
+];
+
+/** ไล่ยิง path ที่พบบ่อยด้วย body ว่าง: 404 = ไม่มี, อย่างอื่น = มี endpoint อยู่ */
+async function probeEndpoints() {
+    const s = settings();
+    const base = String(s.img_url || '').trim().replace(/\s+/g, '').replace(/\/+$/, '');
+    if (!base) { notify('กรอก Base URL ก่อน', 'warning'); return; }
+
+    const root = base.replace(KNOWN_ENDPOINTS, '');
+    const seen = new Set();
+    const targets = [];
+    for (const path of ENDPOINT_CANDIDATES) {
+        const url = joinUrl(root, path);
+        if (!seen.has(url)) { seen.add(url); targets.push({ url, path }); }
+    }
+
+    setC2State(`กำลังไล่ตรวจ ${targets.length} path...`);
+    const found = [];
+    const results = [];
+    for (const target of targets) {
+        let label;
+        try {
+            assertReachableScheme(target.url, '2');
+            const controller = new AbortController();
+            const timer = setTimeout(() => controller.abort(), 12000);
+            const response = await fetch(target.url, {
+                method: 'POST',
+                headers: authHeaders(s.img_key),
+                body: '{}',
+                signal: controller.signal,
+            }).finally(() => clearTimeout(timer));
+            label = `HTTP ${response.status}`;
+            if (response.status !== 404) { found.push(target); label += ' ← มี endpoint นี้'; }
+        } catch (error) {
+            label = error?.name === 'AbortError' ? 'timeout' : 'ต่อไม่ได้';
+        }
+        results.push(`${label.padEnd(22)} ${target.url}`);
+    }
+
+    const context = getContext();
+    const box = document.createElement('div');
+    box.className = 'pxi-errbox';
+    const title = document.createElement('h3');
+    title.textContent = 'ผลการค้นหา endpoint';
+    const summary = document.createElement('div');
+    summary.className = 'pxi-err-reason';
+    summary.textContent = found.length
+        ? `พบ ${found.length} path ที่ตอบกลับ (ไม่ใช่ 404) — 400/401/422 ถือว่า endpoint มีอยู่จริง แค่ body ที่ส่งไปทดสอบไม่ถูกต้อง`
+        : 'ไม่พบ path ที่ใช้ได้เลย — proxy ช่องนี้อาจยังไม่ได้เปิดบริการเจนรูป หรือใช้ path ที่ไม่อยู่ในรายการมาตรฐาน';
+    const pre = document.createElement('pre');
+    pre.className = 'pxi-preview';
+    pre.textContent = results.join('\n');
+    box.append(title, summary, pre);
+
+    if (found.length) {
+        const apply = document.createElement('div');
+        apply.className = 'pxi-hint';
+        apply.textContent = `แนะนำ: ตั้งโหมด URL เป็น "ใช้ URL นี้ตรง ๆ" แล้ววาง ${found[0].url} ลงช่อง Base URL`;
+        box.append(apply);
+    }
+
+    setC2State(found.length ? `พบ endpoint ที่ตอบกลับ: ${found[0].url}` : 'ไม่พบ endpoint เจนรูปที่ใช้ได้', found.length ? 'ok' : 'error');
+    await context.callGenericPopup(box, context.POPUP_TYPE.TEXT, '', { wide: true, large: true, okButton: 'ปิด' });
+}
+
 async function fetchModels() {
     const s = settings();
     try {
@@ -1232,13 +1390,22 @@ async function testConnection(kind) {
             notify('Connection 1 ใช้งานได้', 'success');
             setStatus('Connection 1 ✓ — ' + String(result.text).trim().slice(0, 60));
         } else {
-            setStatus('กำลังทดสอบเจนรูป 1 ใบ...');
-            setC2State('กำลังทดสอบเจนรูป 1 ใบ...');
-            const image = await stage2GenerateImage('1girl, solo, simple background');
-            const size = image.kind === 'base64' ? `${Math.round(image.value.length / 1024)} KB` : 'ได้ URL รูป';
-            notify(`Connection 2 เจนรูปได้ (${size})`, 'success');
-            setStatus('Connection 2 ✓ เจนรูปทดสอบสำเร็จ');
-            setC2State(`ทดสอบเจนรูปสำเร็จ (${size})`, 'ok');
+            if (isBusy) { notify('กำลังทำงานอยู่ กรุณารอสักครู่', 'warning'); return; }
+            isBusy = true;
+            try {
+                const prompt = '1girl, solo, upper body, looking at viewer, simple background';
+                setStatus('กำลังทดสอบเจนรูป 1 ใบ...');
+                setC2State('กำลังทดสอบเจนรูป 1 ใบ...');
+                const image = await stage2GenerateImage(prompt);
+                const path = image.kind === 'base64' ? await uploadBase64(image.value) : image.value;
+                const size = image.kind === 'base64' ? `${Math.round(image.value.length / 1024)} KB` : 'URL รูป';
+                await postImageMessage(path, prompt, 'test');
+                notify(`Connection 2 เจนรูปได้ (${size}) — ส่งเข้าแชทแล้ว`, 'success');
+                setStatus('Connection 2 ✓ เจนรูปทดสอบสำเร็จ ส่งเข้าแชทแล้ว');
+                setC2State(`ทดสอบเจนรูปสำเร็จ (${size}) — รูปอยู่ท้ายแชท`, 'ok');
+            } finally {
+                isBusy = false;
+            }
         }
     } catch (error) {
         setStatus(String(error?.message || error), true);
@@ -1351,6 +1518,7 @@ function toggleSourceBlocks() {
     document.querySelectorAll('.pxi-c1-custom').forEach(el => el.classList.toggle('pxi-hidden', s.c1_source !== 'custom'));
     document.querySelectorAll('.pxi-c2-nai').forEach(el => el.classList.toggle('pxi-hidden', s.c2_source !== 'nai'));
     document.querySelectorAll('.pxi-c2-custom').forEach(el => el.classList.toggle('pxi-hidden', s.c2_source !== 'custom'));
+    if (s.c2_source === 'custom') updateUrlModeUi();
 }
 
 async function populateProfiles() {
@@ -1424,6 +1592,29 @@ function populateSizePresets() {
         select.append(option);
     }
     if (select.dataset) select.dataset.filled = '1';
+}
+
+function updateUrlModeUi() {
+    const s = settings();
+    const mode = s.img_url_mode || 'auto';
+    document.querySelectorAll('.pxi-url-path').forEach(el => el.classList.toggle('pxi-hidden', mode !== 'path'));
+
+    const hint = document.getElementById('pxi_img_url_hint');
+    if (!hint) return;
+    if (!String(s.img_url || '').trim()) {
+        hint.textContent = 'กรอก Base URL ของ proxy ก่อน';
+        hint.classList.remove('pxi-warn');
+        return;
+    }
+    try {
+        const generate = resolveImageUrl('generate');
+        const models = resolveImageUrl('models');
+        hint.textContent = `เจนรูป → POST ${generate}` + (models ? `\nรายชื่อโมเดล → GET ${models}` : '\nโหมดนี้ไม่ดึงรายชื่อโมเดล');
+        hint.classList.remove('pxi-warn');
+    } catch (error) {
+        hint.textContent = String(error?.message || error);
+        hint.classList.add('pxi-warn');
+    }
 }
 
 function updateSizeUi() {
@@ -1512,6 +1703,7 @@ function loadSettingsToUi() {
     toggleSourceBlocks();
     populateSizePresets();
     populateImageModels();
+    updateUrlModeUi();
     updateSizeUi();
     updateContextHints();
     const smeaDyn = document.getElementById('pxi_sm_dyn');
@@ -1542,6 +1734,7 @@ function bindEvents() {
                 if (select) select.value = (settings().img_models || []).includes(el.value) ? el.value : '';
             }
             if (key === 'c2_source') setC2State('ยังไม่ได้เชื่อมต่อ — กรอกค่าด้านล่างแล้วกด "เชื่อมต่อ"');
+            if (key === 'img_url' || key === 'img_url_mode' || key === 'img_gen_path' || key === 'img_models_path') updateUrlModeUi();
             context.saveSettingsDebounced();
         });
     }
@@ -1555,6 +1748,7 @@ function bindEvents() {
     document.getElementById('pxi_llm_test')?.addEventListener('click', () => testConnection('llm'));
     document.getElementById('pxi_img_test')?.addEventListener('click', () => testConnection('img'));
     document.getElementById('pxi_c2_connect')?.addEventListener('click', () => connectC2());
+    document.getElementById('pxi_c2_probe')?.addEventListener('click', () => probeEndpoints());
     document.getElementById('pxi_img_model_select')?.addEventListener('change', (event) => {
         const value = event.target.value;
         if (!value) return;

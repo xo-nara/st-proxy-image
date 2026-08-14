@@ -181,6 +181,7 @@
                     <div class="pxi-row pxi-wrap">
                         <div class="menu_button menu_button_icon" id="pxi_c2_connect"><i class="fa-solid fa-plug-circle-bolt"></i><span>เชื่อมต่อ</span></div>
                         <div class="menu_button menu_button_icon" id="pxi_img_test"><i class="fa-solid fa-image"></i><span>ทดสอบเจนรูป</span></div>
+                        <div class="menu_button menu_button_icon pxi-c2-custom" id="pxi_c2_probe" title="ไล่ยิง path ที่พบบ่อยเพื่อหาว่า proxy เปิด endpoint ไหนไว้"><i class="fa-solid fa-magnifying-glass"></i><span>ค้นหา endpoint</span></div>
                     </div>
                     <div id="pxi_c2_state" class="pxi-note">ยังไม่ได้เชื่อมต่อ — กรอกค่าด้านล่างแล้วกด "เชื่อมต่อ"</div>
 
@@ -210,8 +211,29 @@
                     </div>
 
                     <div class="pxi-c2-custom">
+                        <label for="pxi_img_url_mode">โหมด URL</label>
+                        <select id="pxi_img_url_mode" class="text_pole">
+                            <option value="auto">อัตโนมัติ — เติม /v1 และ path มาตรฐานให้</option>
+                            <option value="path">กำหนด path เอง</option>
+                            <option value="exact">ใช้ URL นี้ตรง ๆ (ไม่เติมอะไรเลย)</option>
+                        </select>
+
                         <label for="pxi_img_url">Base URL</label>
-                        <input id="pxi_img_url" class="text_pole" type="text" placeholder="https://your-nai-proxy.com/v1">
+                        <input id="pxi_img_url" class="text_pole" type="text" placeholder="https://your-proxy.com">
+                        <div id="pxi_img_url_hint" class="pxi-note"></div>
+
+                        <div class="pxi-url-path">
+                            <div class="pxi-grid2">
+                                <div>
+                                    <label for="pxi_img_gen_path">Path เจนรูป</label>
+                                    <input id="pxi_img_gen_path" class="text_pole" type="text" placeholder="images/generations">
+                                </div>
+                                <div>
+                                    <label for="pxi_img_models_path">Path รายชื่อโมเดล</label>
+                                    <input id="pxi_img_models_path" class="text_pole" type="text" placeholder="models (เว้นว่าง = ไม่ดึง)">
+                                </div>
+                            </div>
+                        </div>
                         <label for="pxi_img_key">API Key</label>
                         <input id="pxi_img_key" class="text_pole" type="password" placeholder="sk-...">
                         <label for="pxi_img_model_select">Model</label>

@@ -282,3 +282,10 @@
 .pxi-root .pxi-note.pxi-ok {
     border-left-color: var(--golden, #6bcB77);
 }
+
+.pxi-root #pxi_img_url_hint {
+    white-space: pre-line;
+    word-break: break-all;
+    font-family: var(--monoFontFamily, monospace);
+    font-size: 0.75em;
+}
