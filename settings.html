@@ -33,6 +33,7 @@
                 <div class="menu_button menu_button_icon" id="pxi_run_selfie"><i class="fa-solid fa-face-smile"></i><span>Selfie</span></div>
                 <div class="menu_button menu_button_icon" id="pxi_run_user"><i class="fa-solid fa-user-astronaut"></i><span>User</span></div>
                 <div class="menu_button menu_button_icon" id="pxi_run_last"><i class="fa-solid fa-comment-dots"></i><span>Last Message</span></div>
+                <div class="menu_button menu_button_icon" id="pxi_run_manga"><i class="fa-solid fa-table-cells-large"></i><span>Manga</span></div>
                 <div class="menu_button menu_button_icon" id="pxi_run_free"><i class="fa-solid fa-pen-nib"></i><span>Free</span></div>
                 <div class="menu_button menu_button_icon" id="pxi_preview"><i class="fa-solid fa-eye"></i><span>Preview</span></div>
             </div>
@@ -129,7 +130,12 @@
                             </select>
                         </div>
                     </div>
+                    <label class="checkbox_label" for="pxi_llm_can_search">
+                        <input id="pxi_llm_can_search" type="checkbox">
+                        <span>โมเดลนี้ค้นเว็บได้ <small class="pxi-hint pxi-inline">(เช่น *-search / grounding) — สั่งให้ค้นแท็กตัวละครก่อนเดา และตัด citation ออกให้</small></span>
+                    </label>
                     <div class="pxi-note">
+                        โหมด CoT ทั้งสองแบบมีขั้นตอน "หาแท็กตัวละคร" อยู่ในตัว — บังคับให้โมเดลระบุชื่อผลงานต้นทาง แล้วประเมินความมั่นใจก่อนจะใส่แท็ก ถ้ารู้จักแค่ซีรีส์ก็ใส่แท็กซีรีส์อย่างเดียวแทนการเดา<br>
                         เพดานความยาวคำตอบไม่ใช่ปริมาณที่จะถูกใช้จริง ตอบสั้นก็จ่ายสั้น แต่ถ้าตั้งต่ำเกินแท็กจะถูกตัดกลางคัน — ฉาก 3-4 ตัวละครควรอยู่ที่ 600 ขึ้นไป<br>
                         โหมด CoT เบาจะเผื่อโควตาให้อัตโนมัติ 1.8 เท่า • โหมดหนักยิง Connection 1 สองรอบ (ช้าและเปลืองกว่า แต่แม่นที่สุดกับฉากหลายตัวละคร) • ผลวิเคราะห์ดูได้ใน console
                     </div>
@@ -150,6 +156,7 @@
                         <option value="selfie">Selfie (โคลสอัพหน้าตัวละคร)</option>
                         <option value="user">User (เพอร์โซนาผู้ใช้)</option>
                         <option value="last">Last Message (ฉากล่าสุด)</option>
+                        <option value="manga">Manga Panel (แบ่งช่อง)</option>
                         <option value="free">Free / Scene (คำสั่งทั่วไป)</option>
                     </select>
 
@@ -166,6 +173,7 @@
                     </div>
 
                     <div class="pxi-note">อัปเกรดจากเวอร์ชันก่อน? template ที่บันทึกไว้จะไม่ถูกเขียนทับอัตโนมัติ — กด "รีเซ็ตทั้งหมด" เพื่อรับ default ตัวใหม่ (cast/ตำแหน่ง/ส่วนสูง/style tail)</div>
+                    <div class="pxi-note" id="pxi_manga_note">โหมด Manga Panel: แนะนำขนาดแนวตั้ง (เช่น 768x1344) สำหรับ 4koma แนวตั้ง และแนวนอนสำหรับสตริปแนวนอน • ถ้าอยากได้หน้าขาวดำจริง ๆ ให้เคลียร์ช่อง Positive suffix ที่มี very aesthetic/masterpiece ออกก่อน เพราะมันดันภาพไปทางภาพสีเดี่ยว</div>
                     <div class="pxi-row">
                         <div class="menu_button menu_button_icon" id="pxi_tpl_reset"><i class="fa-solid fa-rotate-left"></i><span>รีเซ็ตโหมดนี้</span></div>
                         <div class="menu_button menu_button_icon" id="pxi_tpl_reset_all"><i class="fa-solid fa-broom"></i><span>รีเซ็ตทั้งหมด</span></div>
@@ -180,6 +188,13 @@
                     <div class="inline-drawer-icon fa-solid fa-circle-chevron-down down"></div>
                 </div>
                 <div class="inline-drawer-content">
+                    <label for="pxi_tag_hints">Pinned tag glossary (ไม่บังคับ)</label>
+                    <textarea id="pxi_tag_hints" class="text_pole textarea_compact pxi-mono" rows="3" placeholder="tamamo cross (umamusume), umamusume&#10;usada pekora, usada pekora (1st costume), hololive"></textarea>
+                    <div class="pxi-note">
+                        ปักหมุดแท็กของตัวละครที่โมเดลมักจำไม่ได้หรือสะกดผิด — ระบบจะแนบเข้า Connection 1 ทุกครั้ง และสั่งให้ใช้สะกดตามนี้ตรง ๆ โดยไม่ต้องเดาเอง<br>
+                        เขียนบรรทัดละตัวละคร ใส่แท็กซีรีส์และแท็กชุดต่อท้ายได้ • เว้นว่างไว้ก็ได้ถ้าไม่ต้องใช้
+                    </div>
+
                     <label for="pxi_persona_mode">เพอร์โซนาของผู้ใช้ในโหมด Last Message</label>
                     <div class="pxi-row">
                         <select id="pxi_persona_mode" class="text_pole pxi-grow">
