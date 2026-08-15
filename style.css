@@ -289,3 +289,14 @@
     font-family: var(--monoFontFamily, monospace);
     font-size: 0.75em;
 }
+
+.pxi-root #pxi_persona_hint {
+    white-space: pre-line;
+}
+
+.pxi-root #pxi_llm_url_hint {
+    white-space: pre-line;
+    word-break: break-all;
+    font-family: var(--monoFontFamily, monospace);
+    font-size: 0.75em;
+}

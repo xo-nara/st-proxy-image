@@ -62,7 +62,7 @@ const DEFAULT_TEMPLATES = {
     },
     last: {
         label: 'Last Message (ฉากล่าสุด)',
-        sys: `You write image prompts for NovelAI Diffusion V4.5 (anime model).\nTurn the LATEST message into one image that reads as the whole scene at that instant - who is there, where each of them stands, how tall each of them is next to the others, what they are doing to each other, and what the place looks like around them.\n\n=== STEP 1: BUILD THE CAST ===\nList EVERY character physically present in the latest message, not just the ones you were given blocks for. A character counts as present if the message shows them acting, speaking, being touched, being looked at, or standing in the frame.\n- Side characters, named NPCs, servants, guards, shopkeepers, classmates and rivals all belong in the image if the moment shows them. Several unnamed people become one crowd tag in the header ("crowd", "people", "multiple boys") instead of groups.\n- Leave someone out only if the message shows them absent, off-screen, behind a door, or merely mentioned rather than present.\n- Count tags MUST match this cast. Two women and a man is "2girls, 1boy" - never shrink it to "1girl" just because only one character had an appearance block supplied.\n\n=== STEP 2: RESOLVE POSITIONS ===\nA message often moves people around. Read it start to finish and take each character's FINAL position - where they ended up by the last sentence, not where they began.\n- Note for each character: where they are in the room, how far from the others, whether standing, sitting, kneeling or lying, and what they are on or against.\n- Then decide the left-to-right order of the frame. Character groups are emitted in that order: the first group is the leftmost figure, the last group is the rightmost. This ordering is the main way the model places people, so choose it deliberately.\n- Reinforce the layout with relation tags inside the group of the character they describe: "standing", "sitting", "kneeling", "lying", "sitting on lap", "on person", "behind another", "in front of another", "back-to-back", "side-by-side", "leaning forward", "leaning on person", "foreground", "background".\n- If two characters are apart rather than touching, use distance tags such as "facing each other", "across the room", "looking at another" instead of contact tags.\n\n=== STEP 3: RESOLVE HEIGHTS AND EYE LINES ===\n${HEIGHT_RULE}\n- If the height gap is the point of the moment, raise it once: "1.25::height difference, looking up at another ::".\n\n=== STEP 4: IDENTIFY EACH ONE ===\n${IDENTITY_RULE}\n\nWhere each look comes from, in order:\n1. The latest message - always wins for clothing, hair state, expression, pose, injuries, anything temporary.\n2. The appearance block (main character) and the persona block (user's character), for fixed traits including height and build.\n3. For a side character with no block, build the look from what the message says plus what their identity tag implies. If the message gives nothing, write plain role-appropriate tags rather than skipping them.\n\n=== STEP 5: OUTPUT SHAPE ===\nOne flat comma-separated list in this order:\n\n1. SCENE HEADER - count tags for the whole cast, then the setting: place, indoors or outdoors, time of day, weather, key objects and furniture that anchor the layout, lighting, mood. Then exactly one framing tag wide enough to hold everyone: "wide shot", "full body" and "cowboy shot" work for two or more people and are the ones that actually show a height difference; "from side" helps a layout read clearly; reserve "close-up" and "portrait" for a single figure. Never combine conflicting framing tags.\n\n2. ONE GROUP PER CHARACTER, emitted left to right, each a numeric-emphasis group so the model cannot mix two characters together:\n   "1.05::girl, <identity tags>, <hair>, <eyes>, <height and build>, <skin>, <clothing>, <expression>, <gaze>, <posture and position>, <action tag> ::"\n   - Open with the bare word "girl", "boy" or "other" - never a numbered count tag, those live only in the header.\n   - Close every group with a bare "::" before the next one. Never let one character's tags spill into another group.\n   - Clothing is mandatory. If a character is undressed, say so explicitly or the model will invent an outfit.\n   - The character the moment centres on goes at 1.15; the others stay at 1.05.\n\n=== PLACEMENT ===\n${POSITION_RULE}\n\n=== ACTION TAGS ===\n- Different roles: "source#<action>" on the one performing it, "target#<action>" on the one receiving it. One hugs the other gives source#hug and target#hug.\n- Reciprocal: the same "mutual#<action>" written identically in both groups - mutual#hug, mutual#kissing.\n- Test: if swapping the two characters changes the meaning, use source/target; if it stays the same, use mutual.\n- One action tag per character, except mutual# which is shared. Put it last inside the group. Never rename source, target or mutual, never use them in a solo image, never use them for something done alone - that is a plain tag such as "sitting" or "drinking".\n- With three or more characters, tag only the pair actually interacting; give the bystanders ordinary posture and gaze tags.\n- If nobody is touching anyone, omit action tags entirely.\n\n=== SYNTAX ===\n${DENSITY_RULE}\n${RENAMED_RULE}\n${RATING_RULE}\n\n${STYLE_TAIL}\n\nAt most 4 character groups; if the moment holds more, keep the ones the message focuses on and cover the rest with a crowd tag.\n40-55 tags total.\n${NAI_RULES}`,
+        sys: `You write image prompts for NovelAI Diffusion V4.5 (anime model).\nTurn the LATEST message into one image that reads as the whole scene at that instant - who is there, where each of them stands, how tall each of them is next to the others, what they are doing to each other, and what the place looks like around them.\n\n=== STEP 1: BUILD THE CAST ===\nList EVERY character physically present in the latest message, not just the ones you were given blocks for. A character counts as present if the message shows them acting, speaking, being touched, being looked at, or standing in the frame.\n- Side characters, named NPCs, servants, guards, shopkeepers, classmates and rivals all belong in the image if the moment shows them. Several unnamed people become one crowd tag in the header ("crowd", "people", "multiple boys") instead of groups.\n- Leave someone out only if the message shows them absent, off-screen, behind a door, or merely mentioned rather than present.\n- Count tags MUST match this cast. Two women and a man is "2girls, 1boy" - never shrink it to "1girl" just because only one character had an appearance block supplied.\n\n=== STEP 2: RESOLVE POSITIONS ===\nA message often moves people around. Read it start to finish and take each character's FINAL position - where they ended up by the last sentence, not where they began.\n- Note for each character: where they are in the room, how far from the others, whether standing, sitting, kneeling or lying, and what they are on or against.\n- Then decide the left-to-right order of the frame. Character groups are emitted in that order: the first group is the leftmost figure, the last group is the rightmost. This ordering is the main way the model places people, so choose it deliberately.\n- Reinforce the layout with relation tags inside the group of the character they describe: "standing", "sitting", "kneeling", "lying", "sitting on lap", "on person", "behind another", "in front of another", "back-to-back", "side-by-side", "leaning forward", "leaning on person", "foreground", "background".\n- If two characters are apart rather than touching, use distance tags such as "facing each other", "across the room", "looking at another" instead of contact tags.\n\n=== STEP 3: RESOLVE HEIGHTS AND EYE LINES ===\n${HEIGHT_RULE}\n- If the height gap is the point of the moment, raise it once: "1.25::height difference, looking up at another ::".\n\n=== STEP 4: IDENTIFY EACH ONE ===\n${IDENTITY_RULE}\n\nWhere each look comes from, in order:\n1. The latest message - always wins for clothing, hair state, expression, pose, injuries, anything temporary.\n2. The appearance block (main character) and the persona block (user's character), for fixed traits including height and build. A persona block appears only when the user's character is actually in the shot - if it is missing, do not draw that character and do not include them in the count tags. If it is present but the latest message shows they are absent, ignore it the same way.\n3. For a side character with no block, build the look from what the message says plus what their identity tag implies. If the message gives nothing, write plain role-appropriate tags rather than skipping them.\n\n=== STEP 5: OUTPUT SHAPE ===\nOne flat comma-separated list in this order:\n\n1. SCENE HEADER - count tags for the whole cast, then the setting: place, indoors or outdoors, time of day, weather, key objects and furniture that anchor the layout, lighting, mood. Then exactly one framing tag wide enough to hold everyone: "wide shot", "full body" and "cowboy shot" work for two or more people and are the ones that actually show a height difference; "from side" helps a layout read clearly; reserve "close-up" and "portrait" for a single figure. Never combine conflicting framing tags.\n\n2. ONE GROUP PER CHARACTER, emitted left to right, each a numeric-emphasis group so the model cannot mix two characters together:\n   "1.05::girl, <identity tags>, <hair>, <eyes>, <height and build>, <skin>, <clothing>, <expression>, <gaze>, <posture and position>, <action tag> ::"\n   - Open with the bare word "girl", "boy" or "other" - never a numbered count tag, those live only in the header.\n   - Close every group with a bare "::" before the next one. Never let one character's tags spill into another group.\n   - Clothing is mandatory. If a character is undressed, say so explicitly or the model will invent an outfit.\n   - The character the moment centres on goes at 1.15; the others stay at 1.05.\n\n=== PLACEMENT ===\n${POSITION_RULE}\n\n=== ACTION TAGS ===\n- Different roles: "source#<action>" on the one performing it, "target#<action>" on the one receiving it. One hugs the other gives source#hug and target#hug.\n- Reciprocal: the same "mutual#<action>" written identically in both groups - mutual#hug, mutual#kissing.\n- Test: if swapping the two characters changes the meaning, use source/target; if it stays the same, use mutual.\n- One action tag per character, except mutual# which is shared. Put it last inside the group. Never rename source, target or mutual, never use them in a solo image, never use them for something done alone - that is a plain tag such as "sitting" or "drinking".\n- With three or more characters, tag only the pair actually interacting; give the bystanders ordinary posture and gaze tags.\n- If nobody is touching anyone, omit action tags entirely.\n\n=== SYNTAX ===\n${DENSITY_RULE}\n${RENAMED_RULE}\n${RATING_RULE}\n\n${STYLE_TAIL}\n\nAt most 4 character groups; if the moment holds more, keep the ones the message focuses on and cover the rest with a crowd tag.\n40-55 tags total.\n${NAI_RULES}`,
     },
 };
 
@@ -92,6 +92,10 @@ const defaultSettings = {
     c1_source: 'profile',
     c1_profile: '',
     llm_url: '',
+    llm_url_mode: 'auto',
+    llm_gen_path: 'chat/completions',
+    llm_models_path: 'models',
+    llm_models: [],
     llm_key: '',
     llm_model: '',
     llm_max_tokens: 600,
@@ -100,6 +104,7 @@ const defaultSettings = {
     llm_timeout: 90,
 
     // Context budget
+    persona_mode: 'auto',
     ctx_messages: 3,
     ctx_chars: 1200,
     ctx_total: 10000,
@@ -154,12 +159,16 @@ const BINDINGS = [
     ['pxi_c1_source', 'c1_source', 'text'],
     ['pxi_c1_profile', 'c1_profile', 'text'],
     ['pxi_llm_url', 'llm_url', 'text'],
+    ['pxi_llm_url_mode', 'llm_url_mode', 'text'],
+    ['pxi_llm_gen_path', 'llm_gen_path', 'text'],
+    ['pxi_llm_models_path', 'llm_models_path', 'text'],
     ['pxi_llm_key', 'llm_key', 'text'],
     ['pxi_llm_model', 'llm_model', 'text'],
     ['pxi_llm_max_tokens', 'llm_max_tokens', 'number'],
     ['pxi_cot_mode', 'cot_mode', 'text'],
     ['pxi_llm_temp', 'llm_temp', 'number'],
     ['pxi_llm_timeout', 'llm_timeout', 'number'],
+    ['pxi_persona_mode', 'persona_mode', 'text'],
     ['pxi_ctx_messages', 'ctx_messages', 'number'],
     ['pxi_ctx_chars', 'ctx_chars', 'number'],
     ['pxi_ctx_total', 'ctx_total', 'number'],
@@ -219,8 +228,11 @@ function initSettings() {
     delete s.msg_template;  // ยกเลิกตั้งแต่ 2.11.0 (ข้อความ = prompt เสมอ)
     delete s.hide_message;  // ยกเลิกตั้งแต่ 2.11.0 (ซ่อนจาก AI เสมอ)
     if (!['off', 'light', 'heavy'].includes(s.cot_mode)) s.cot_mode = 'off';
+    if (!['auto', 'always', 'never'].includes(s.persona_mode)) s.persona_mode = 'auto';
     if (!Array.isArray(s.img_models)) s.img_models = [];
     if (!['auto', 'path', 'exact'].includes(s.img_url_mode)) s.img_url_mode = 'auto';
+    if (!['auto', 'path', 'exact'].includes(s.llm_url_mode)) s.llm_url_mode = 'auto';
+    if (!Array.isArray(s.llm_models)) s.llm_models = [];
     for (const mode of MODES) {
         if (!s.templates[mode] || typeof s.templates[mode] !== 'object') s.templates[mode] = defaultTemplate(mode);
         if (typeof s.templates[mode].sys !== 'string') s.templates[mode].sys = DEFAULT_TEMPLATES[mode].sys;
@@ -270,7 +282,10 @@ function hintsForStatus(stage, status, raw) {
     if (status === 402) out.push('เครดิต/Anlas ไม่พอ หรือ subscription หมดอายุ');
     if (status === 404) {
         out.push('ไม่พบ endpoint ที่ URL นี้');
-        if (stage === '2' && settings().c2_source === 'custom') {
+        if (stage === '1' && settings().c1_source === 'custom') {
+            out.push('ถ้า proxy ไม่ได้ใช้รูปแบบ /v1/chat/completions ให้เปลี่ยน "โหมด URL" เป็น "กำหนด path เอง" หรือ "ใช้ URL นี้ตรง ๆ" ในหมวด Connection 1');
+            out.push('กดปุ่ม "เชื่อมต่อ" เพื่อดูว่า /models ตอบกลับได้ไหม จะได้แยกว่าเป็นที่ URL หรือที่ endpoint');
+        } else if (stage === '2' && settings().c2_source === 'custom') {
             out.push('ถ้า /models ตอบ 200 ได้แต่ตัวเจนรูป 404 แปลว่า proxy ช่องนั้นยังไม่ได้เปิด endpoint เจนรูปแบบ OpenAI ถึงจะมีชื่อโมเดลรูปอยู่ในลิสต์ก็ตาม — ต้องให้คนดูแล proxy เปิดให้ หรือถามว่า path จริงคืออะไร');
             out.push('ถ้ารู้ path จริงแล้ว ให้เปลี่ยน "โหมด URL" เป็น "กำหนด path เอง" หรือ "ใช้ URL นี้ตรง ๆ"');
             out.push('กดปุ่ม "ค้นหา endpoint" ในหมวด Connection 2 เพื่อให้ระบบไล่ยิง path ที่พบบ่อยแล้วบอกว่าอันไหนมีอยู่จริง');
@@ -370,6 +385,23 @@ function joinUrl(base, path) {
  * path  = ต่อ path ที่ผู้ใช้กรอกเอง โดยไม่เติมอะไรทั้งสิ้น
  * exact = ยิงไปที่ URL นั้นตรง ๆ
  */
+function resolveLlmUrl(kind) {
+    const s = settings();
+    const base = String(s.llm_url || '').trim().replace(/\s+/g, '').replace(/\/+$/, '');
+    if (!base) throw new PxiError('ยังไม่ได้ตั้งค่า Base URL ของ Connection 1', { stage: '1' });
+    const mode = s.llm_url_mode || 'auto';
+
+    if (mode === 'exact') return kind === 'models' ? null : base;
+
+    if (mode === 'path') {
+        const path = kind === 'models' ? s.llm_models_path : s.llm_gen_path;
+        if (kind === 'models' && !String(path || '').trim()) return null;
+        return joinUrl(base, path);
+    }
+
+    return buildUrl(base, kind === 'models' ? 'models' : 'chat/completions');
+}
+
 function resolveImageUrl(kind) {
     const s = settings();
     const base = String(s.img_url || '').trim().replace(/\s+/g, '').replace(/\/+$/, '');
@@ -555,6 +587,38 @@ async function buildMacros(extra = '') {
 }
 
 /** user message ที่ระบบประกอบให้เอง (โหมดที่ไม่ใช่ User) */
+/**
+ * สรรพนามบุรุษที่ 2 เท่านั้น = ผู้บรรยายกำลังพูดถึงผู้ใช้ในฉาก
+ * ไม่รวมบุรุษที่ 1 (ผม/ฉัน/เรา) เพราะในบทบรรยายมักหมายถึงตัวละครเอง ไม่ใช่ผู้ใช้
+ * ไม่รวม "เธอ" เพราะภาษาไทยใช้เป็นบุรุษที่ 3 (หล่อน) ได้บ่อยพอ ๆ กัน
+ */
+const USER_PRONOUNS = /\b(you|your|yours|yourself)\b|คุณ|นาย|แก|มึง/i;
+
+/**
+ * ผู้ใช้อยู่ในเฟรมของข้อความล่าสุดหรือไม่
+ * ใช้ตัดสินว่าจะส่งบล็อก persona ไปให้ Connection 1 ไหม
+ */
+function isUserInScene(macros) {
+    const context = getContext();
+    const scene = String(macros.lastMessage || '');
+    if (!scene) return false;
+
+    const name = String(context.name1 || '').trim();
+    if (name && new RegExp(`(^|[^\\p{L}\\p{N}])${name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}([^\\p{L}\\p{N}]|$)`, 'iu').test(scene)) return true;
+
+    // ข้อความของผู้ใช้เอง = ผู้ใช้กำลังลงมือทำอะไรอยู่ในฉาก
+    if (/^\s*[^:\n]{1,40}:/.test(scene) && name && scene.trimStart().toLowerCase().startsWith(name.toLowerCase())) return true;
+
+    return USER_PRONOUNS.test(scene);
+}
+
+function shouldIncludePersona(macros) {
+    const mode = settings().persona_mode || 'auto';
+    if (mode === 'always') return true;
+    if (mode === 'never') return false;
+    return isUserInScene(macros);
+}
+
 function buildAutoUserMessage(mode, macros) {
     const parts = [];
     const push = (title, body) => {
@@ -578,13 +642,17 @@ function buildAutoUserMessage(mode, macros) {
             push('Persona (fixed traits)', macros.persona);
             push('Latest message (current outfit, hair, mood, place)', macros.lastMessage);
             break;
-        case 'last':
-            parts.push(`Character: ${macros.char} • User persona: ${macros.user}`);
+        case 'last': {
+            const withPersona = shouldIncludePersona(macros);
+            parts.push(withPersona
+                ? `Character: ${macros.char} • User persona: ${macros.user}`
+                : `Character: ${macros.char} • The user's character (${macros.user}) is NOT in this shot - do not draw them and do not count them.`);
             push('Character appearance', macros.description);
-            push(`Persona appearance of ${macros.user}`, macros.persona);
+            if (withPersona) push(`Persona appearance of ${macros.user}`, macros.persona);
             push('Recent scene', macros.chat);
             push('Latest message (draw THIS)', macros.lastMessage);
             break;
+        }
         default:
             parts.push(`Character: ${macros.char} • User: ${macros.user}`);
             push('Recent scene', macros.chat);
@@ -742,7 +810,7 @@ async function stage1ViaProfile(messages) {
 
 async function stage1ViaCustom(messages) {
     const s = settings();
-    const url = buildUrl(s.llm_url, 'chat/completions');
+    const url = resolveLlmUrl('generate');
     const data = await requestJson(url, {
         method: 'POST',
         headers: authHeaders(s.llm_key),
@@ -1374,7 +1442,6 @@ async function connectC2() {
     }
 }
 
-/** ดึงรายชื่อโมเดลของ Connection 1 (Connection 2 ใช้ connectC2 แทน) */
 const ENDPOINT_CANDIDATES = [
     'images/generations',
     'v1/images/generations',
@@ -1452,19 +1519,63 @@ async function probeEndpoints() {
     await context.callGenericPopup(box, context.POPUP_TYPE.TEXT, '', { wide: true, large: true, okButton: 'ปิด' });
 }
 
-async function fetchModels() {
+function setC1State(text, tone = 'idle') {
+    const el = document.getElementById('pxi_c1_state');
+    if (!el) return;
+    el.textContent = text;
+    el.classList.toggle('pxi-warn', tone === 'error');
+    el.classList.toggle('pxi-ok', tone === 'ok');
+}
+
+function populateLlmModels() {
+    const select = document.getElementById('pxi_llm_model_select');
+    if (!select) return;
+    const s = settings();
+    const list = Array.isArray(s.llm_models) ? s.llm_models : [];
+    select.innerHTML = '';
+
+    const placeholder = document.createElement('option');
+    placeholder.value = '';
+    placeholder.textContent = list.length ? '⟨เลือกโมเดล⟩' : '⟨ยังไม่ได้เชื่อมต่อ⟩';
+    select.append(placeholder);
+
+    for (const id of list) {
+        const option = document.createElement('option');
+        option.value = id;
+        option.textContent = id;
+        select.append(option);
+    }
+    select.value = list.includes(s.llm_model) ? s.llm_model : '';
+}
+
+/** ตรวจการเชื่อมต่อของ Connection 1 (โหมด Custom) แล้วโหลดรายชื่อโมเดล */
+async function connectC1() {
+    const context = getContext();
     const s = settings();
     try {
-        const url = buildUrl(s.llm_url, 'models');
+        const url = resolveLlmUrl('models');
+        if (!url) {
+            const target = resolveLlmUrl('generate');
+            s.llm_models = [];
+            populateLlmModels();
+            context.saveSettingsDebounced();
+            setC1State(`โหมดนี้ไม่ดึงรายชื่อโมเดล — จะยิงไปที่ ${target} โดยตรง ใช้ปุ่ม "ทดสอบ" เพื่อยืนยัน`, 'ok');
+            notify('ตั้งค่า URL แล้ว ใช้ปุ่มทดสอบเพื่อยืนยัน', 'success');
+            return;
+        }
+        setC1State('กำลังเชื่อมต่อและดึงรายชื่อโมเดล...');
         const data = await requestJson(url, { method: 'GET', headers: authHeaders(s.llm_key) }, 30, '1');
         const list = (Array.isArray(data?.data) ? data.data : Array.isArray(data) ? data : [])
             .map(m => (typeof m === 'string' ? m : m?.id)).filter(Boolean).sort();
-        const datalist = document.getElementById('pxi_llm_model_list');
-        if (datalist) datalist.innerHTML = list.map(id => `<option value="${String(id).replace(/"/g, '&quot;')}"></option>`).join('');
-        notify(`พบ ${list.length} โมเดล`, 'success');
-        setStatus(`ดึงรายชื่อโมเดลสำเร็จ (${list.length})`);
+        s.llm_models = list;
+        populateLlmModels();
+        context.saveSettingsDebounced();
+        setC1State(list.length
+            ? `เชื่อมต่อแล้ว • พบ ${list.length} โมเดล — เลือกจากรายการด้านล่าง`
+            : 'เชื่อมต่อได้ แต่ endpoint ไม่ส่งรายชื่อโมเดลมา — พิมพ์ชื่อโมเดลเอง', 'ok');
+        notify(list.length ? `เชื่อมต่อสำเร็จ พบ ${list.length} โมเดล` : 'เชื่อมต่อสำเร็จ แต่ไม่มีรายชื่อโมเดล', 'success');
     } catch (error) {
-        setStatus(String(error?.message || error), true);
+        setC1State(String(error?.message || error), 'error');
         await showErrorPopup(error);
     }
 }
@@ -1479,6 +1590,7 @@ async function testConnection(kind) {
             if (!String(result.text || '').trim()) throw new PxiError('ไม่มีข้อความตอบกลับ', { stage: '1', raw: result.raw });
             notify('Connection 1 ใช้งานได้', 'success');
             setStatus('Connection 1 ✓ — ' + String(result.text).trim().slice(0, 60));
+            setC1State('ทดสอบผ่าน — ตอบกลับว่า "' + String(result.text).trim().slice(0, 40) + '"', 'ok');
         } else {
             if (isBusy) { notify('กำลังทำงานอยู่ กรุณารอสักครู่', 'warning'); return; }
             isBusy = true;
@@ -1499,6 +1611,7 @@ async function testConnection(kind) {
         }
     } catch (error) {
         setStatus(String(error?.message || error), true);
+        if (kind === 'llm') setC1State(String(error?.message || error), 'error');
         await showErrorPopup(error);
     }
 }
@@ -1606,6 +1719,7 @@ function toggleSourceBlocks() {
     const s = settings();
     document.querySelectorAll('.pxi-c1-profile').forEach(el => el.classList.toggle('pxi-hidden', s.c1_source !== 'profile'));
     document.querySelectorAll('.pxi-c1-custom').forEach(el => el.classList.toggle('pxi-hidden', s.c1_source !== 'custom'));
+    if (s.c1_source === 'custom') updateLlmUrlModeUi();
     document.querySelectorAll('.pxi-c2-nai').forEach(el => el.classList.toggle('pxi-hidden', s.c2_source !== 'nai'));
     document.querySelectorAll('.pxi-c2-custom').forEach(el => el.classList.toggle('pxi-hidden', s.c2_source !== 'custom'));
     if (s.c2_source === 'custom') updateUrlModeUi();
@@ -1684,6 +1798,29 @@ function populateSizePresets() {
     if (select.dataset) select.dataset.filled = '1';
 }
 
+function updateLlmUrlModeUi() {
+    const s = settings();
+    const mode = s.llm_url_mode || 'auto';
+    document.querySelectorAll('.pxi-llm-url-path').forEach(el => el.classList.toggle('pxi-hidden', mode !== 'path'));
+
+    const hint = document.getElementById('pxi_llm_url_hint');
+    if (!hint) return;
+    if (!String(s.llm_url || '').trim()) {
+        hint.textContent = 'กรอก Base URL ของ proxy ก่อน';
+        hint.classList.remove('pxi-warn');
+        return;
+    }
+    try {
+        const generate = resolveLlmUrl('generate');
+        const models = resolveLlmUrl('models');
+        hint.textContent = `สร้าง prompt → POST ${generate}` + (models ? `\nรายชื่อโมเดล → GET ${models}` : '\nโหมดนี้ไม่ดึงรายชื่อโมเดล');
+        hint.classList.remove('pxi-warn');
+    } catch (error) {
+        hint.textContent = String(error?.message || error);
+        hint.classList.add('pxi-warn');
+    }
+}
+
 function updateUrlModeUi() {
     const s = settings();
     const mode = s.img_url_mode || 'auto';
@@ -1748,6 +1885,45 @@ function applySizeFromField() {
     notify(snapped ? `บันทึกแล้ว ปัดเป็นทวีคูณของ 64 เป็น ${settings().size}` : `บันทึกขนาด ${settings().size} แล้ว`, 'success');
 }
 
+let personaHintTimer = null;
+
+/** เรียกได้ถี่แค่ไหนก็ได้ รวมเป็นครั้งเดียวใน 300ms */
+function schedulePersonaHint() {
+    clearTimeout(personaHintTimer);
+    personaHintTimer = setTimeout(() => { updatePersonaHint(); }, 300);
+}
+
+async function updatePersonaHint() {
+    const el = document.getElementById('pxi_persona_hint');
+    if (!el) return;
+    // ไม่ต้องคำนวณถ้าหน้าตั้งค่ายังไม่ถูกเปิดดู
+    if (el.offsetParent === null && el.offsetParent !== undefined) return;
+    const mode = settings().persona_mode || 'auto';
+    if (mode === 'always') {
+        el.textContent = 'ส่งบล็อก persona ไปทุกครั้ง — ฉากที่ผู้ใช้ไม่ได้อยู่ในเฟรม โมเดลอาจลากตัวละครที่สองเข้ามาเอง';
+        el.classList.remove('pxi-warn');
+        return;
+    }
+    if (mode === 'never') {
+        el.textContent = 'ไม่ส่ง persona เลย — ฉากที่มีผู้ใช้อยู่ด้วยจะถูกวาดจากสิ่งที่ข้อความบรรยายล้วน ๆ';
+        el.classList.remove('pxi-warn');
+        return;
+    }
+    try {
+        const macros = await buildMacros('');
+        const inScene = isUserInScene(macros);
+        const name = getContext().name1 || 'ผู้ใช้';
+        const preview = String(macros.lastMessage || '').slice(0, 60);
+        el.textContent = inScene
+            ? `ฉากล่าสุดตรวจพบ ${name} อยู่ในเฟรม — จะส่ง persona ไปด้วย\n"${preview}…"`
+            : `ฉากล่าสุดไม่พบ ${name} — จะไม่ส่ง persona และสั่งไม่ให้วาดตัวละครนี้\n"${preview}…"`;
+        el.classList.remove('pxi-warn');
+    } catch {
+        el.textContent = 'ตรวจจากชื่อผู้ใช้และสรรพนามในข้อความล่าสุด (ไทย/อังกฤษ) ถ้าตรวจพลาดให้สลับไปโหมดบังคับ';
+        el.classList.remove('pxi-warn');
+    }
+}
+
 function updateContextHints() {
     const el = document.getElementById('pxi_ctx_hint');
     if (!el) return;
@@ -1798,10 +1974,13 @@ function loadSettingsToUi() {
     toggleSourceBlocks();
     populateSizePresets();
     populateImageModels();
+    populateLlmModels();
     updateUrlModeUi();
+    updateLlmUrlModeUi();
     resolveOverswipeConflict({ silent: true });
     updateSizeUi();
     updateContextHints();
+    updatePersonaHint();
     const smeaDyn = document.getElementById('pxi_sm_dyn');
     if (smeaDyn) {
         smeaDyn.checked = false;
@@ -1824,6 +2003,7 @@ function bindEvents() {
             if (key === 'wand_button') updateWandButton();
             if (key === 'c1_source' || key === 'c2_source') toggleSourceBlocks();
             if (key.startsWith('ctx_') || key === 'llm_max_tokens' || key === 'cot_mode') updateContextHints();
+            if (key === 'persona_mode') updatePersonaHint();
             if (key === 'size' || key === 'steps' || key === 'anlas_guard') updateSizeUi();
             if (key === 'img_model') {
                 const select = document.getElementById('pxi_img_model_select');
@@ -1832,6 +2012,12 @@ function bindEvents() {
             if (key === 'swipe_regen' || key === 'take_over_overswipe') resolveOverswipeConflict();
             if (key === 'c2_source') setC2State('ยังไม่ได้เชื่อมต่อ — กรอกค่าด้านล่างแล้วกด "เชื่อมต่อ"');
             if (key === 'img_url' || key === 'img_url_mode' || key === 'img_gen_path' || key === 'img_models_path') updateUrlModeUi();
+            if (key === 'llm_url' || key === 'llm_url_mode' || key === 'llm_gen_path' || key === 'llm_models_path') updateLlmUrlModeUi();
+            if (key === 'llm_model') {
+                const select = document.getElementById('pxi_llm_model_select');
+                if (select) select.value = (settings().llm_models || []).includes(el.value) ? el.value : '';
+            }
+            if (key === 'c1_source') setC1State('ยังไม่ได้เชื่อมต่อ — กรอกค่าด้านล่างแล้วกด "เชื่อมต่อ"');
             context.saveSettingsDebounced();
         });
     }
@@ -1841,7 +2027,16 @@ function bindEvents() {
     document.getElementById('pxi_tpl_reset')?.addEventListener('click', () => resetTemplate(false));
     document.getElementById('pxi_tpl_reset_all')?.addEventListener('click', () => resetTemplate(true));
 
-    document.getElementById('pxi_llm_fetch')?.addEventListener('click', () => fetchModels());
+    document.getElementById('pxi_c1_connect')?.addEventListener('click', () => connectC1());
+    document.getElementById('pxi_llm_model_select')?.addEventListener('change', (event) => {
+        const value = event.target.value;
+        if (!value) return;
+        settings().llm_model = value;
+        const field = document.getElementById('pxi_llm_model');
+        if (field) field.value = value;
+        getContext().saveSettingsDebounced();
+        setC1State(`เลือกโมเดล ${value} แล้ว`, 'ok');
+    });
     document.getElementById('pxi_llm_test')?.addEventListener('click', () => testConnection('llm'));
     document.getElementById('pxi_img_test')?.addEventListener('click', () => testConnection('img'));
     document.getElementById('pxi_c2_connect')?.addEventListener('click', () => connectC2());
@@ -1870,6 +2065,7 @@ function bindEvents() {
     });
     document.getElementById('pxi_anlas_view')?.addEventListener('click', () => viewAnlas());
     document.getElementById('pxi_profile_refresh')?.addEventListener('click', () => populateProfiles());
+    document.getElementById('pxi_persona_refresh')?.addEventListener('click', () => updatePersonaHint());
     document.getElementById('pxi_preview')?.addEventListener('click', () => previewPrompt());
     document.getElementById('pxi_docs_save_all')?.addEventListener('click', () => downloadText('novelai-cheatsheet.md', docsToMarkdown()));
     document.getElementById('pxi_nai_recommended')?.addEventListener('click', () => applyRecommended());
@@ -2065,6 +2261,11 @@ jQuery(async () => {
         resolveOverswipeConflict({ silent: true });
 
         const context = getContext();
+        for (const key of ['MESSAGE_SENT', 'MESSAGE_RECEIVED', 'MESSAGE_EDITED', 'MESSAGE_DELETED', 'MESSAGE_SWIPED', 'CHAT_CHANGED']) {
+            const eventName = context.eventTypes?.[key];
+            if (eventName) context.eventSource.on(eventName, schedulePersonaHint);
+        }
+
         const imageSwipedEvent = context.eventTypes?.IMAGE_SWIPED;
         if (imageSwipedEvent) context.eventSource.on(imageSwipedEvent, onImageSwiped);
         else console.warn(LOG, 'SillyTavern เวอร์ชันนี้ไม่มี IMAGE_SWIPED — ปิดฟีเจอร์ปัดเพื่อเจนใหม่');

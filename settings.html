@@ -64,23 +64,52 @@
                     </div>
 
                     <div class="pxi-c1-custom">
+                        <div class="pxi-row pxi-wrap">
+                            <div class="menu_button menu_button_icon" id="pxi_c1_connect"><i class="fa-solid fa-plug-circle-bolt"></i><span>เชื่อมต่อ</span></div>
+                            <div class="menu_button menu_button_icon" id="pxi_llm_test"><i class="fa-solid fa-comment-dots"></i><span>ทดสอบ</span></div>
+                        </div>
+                        <div id="pxi_c1_state" class="pxi-note">ยังไม่ได้เชื่อมต่อ — กรอกค่าด้านล่างแล้วกด "เชื่อมต่อ"</div>
+
+                        <label for="pxi_llm_url_mode">โหมด URL</label>
+                        <select id="pxi_llm_url_mode" class="text_pole">
+                            <option value="auto">อัตโนมัติ — เติม /v1 และ path มาตรฐานให้</option>
+                            <option value="path">กำหนด path เอง</option>
+                            <option value="exact">ใช้ URL นี้ตรง ๆ (ไม่เติมอะไรเลย)</option>
+                        </select>
+
                         <label for="pxi_llm_url">Base URL</label>
-                        <input id="pxi_llm_url" class="text_pole" type="text" placeholder="https://your-proxy.com/v1">
+                        <input id="pxi_llm_url" class="text_pole" type="text" placeholder="https://your-proxy.com">
+                        <div id="pxi_llm_url_hint" class="pxi-note"></div>
+
+                        <div class="pxi-llm-url-path">
+                            <div class="pxi-grid2">
+                                <div>
+                                    <label for="pxi_llm_gen_path">Path สร้าง prompt</label>
+                                    <input id="pxi_llm_gen_path" class="text_pole" type="text" placeholder="chat/completions">
+                                </div>
+                                <div>
+                                    <label for="pxi_llm_models_path">Path รายชื่อโมเดล</label>
+                                    <input id="pxi_llm_models_path" class="text_pole" type="text" placeholder="models (เว้นว่าง = ไม่ดึง)">
+                                </div>
+                            </div>
+                        </div>
+
                         <label for="pxi_llm_key">API Key</label>
                         <input id="pxi_llm_key" class="text_pole" type="password" placeholder="sk-...">
-                        <label for="pxi_llm_model">Model</label>
-                        <div class="pxi-row">
-                            <input id="pxi_llm_model" class="text_pole pxi-grow" type="text" list="pxi_llm_model_list" placeholder="gpt-4o-mini">
-                            <datalist id="pxi_llm_model_list"></datalist>
-                            <div class="menu_button menu_button_icon" id="pxi_llm_fetch" title="ดึงรายชื่อโมเดล"><i class="fa-solid fa-rotate"></i></div>
-                        </div>
-                        <div class="pxi-grid3">
+
+                        <label for="pxi_llm_model_select">Model</label>
+                        <select id="pxi_llm_model_select" class="text_pole"></select>
+                        <small class="pxi-hint">รายการจะขึ้นหลังกด "เชื่อมต่อ" — ถ้า endpoint ไม่มี /models ให้พิมพ์ชื่อโมเดลเองด้านล่าง</small>
+                        <label for="pxi_llm_model">หรือพิมพ์ชื่อโมเดลเอง</label>
+                        <input id="pxi_llm_model" class="text_pole" type="text" placeholder="gpt-4o-mini">
+
+                        <div class="pxi-grid2">
                             <div>
                                 <label for="pxi_llm_temp">Temperature</label>
                                 <input id="pxi_llm_temp" class="text_pole" type="number" min="0" max="2" step="0.05">
                             </div>
                             <div>
-                                <label for="pxi_llm_timeout">Timeout (s)</label>
+                                <label for="pxi_llm_timeout">Timeout (วินาที)</label>
                                 <input id="pxi_llm_timeout" class="text_pole" type="number" min="5" max="600" step="5">
                             </div>
                         </div>
@@ -105,7 +134,6 @@
                         โหมด CoT เบาจะเผื่อโควตาให้อัตโนมัติ 1.8 เท่า • โหมดหนักยิง Connection 1 สองรอบ (ช้าและเปลืองกว่า แต่แม่นที่สุดกับฉากหลายตัวละคร) • ผลวิเคราะห์ดูได้ใน console
                     </div>
 
-                    <div class="menu_button menu_button_icon" id="pxi_llm_test"><i class="fa-solid fa-plug"></i><span>ทดสอบ Connection 1</span></div>
                 </div>
             </div>
 
@@ -152,6 +180,18 @@
                     <div class="inline-drawer-icon fa-solid fa-circle-chevron-down down"></div>
                 </div>
                 <div class="inline-drawer-content">
+                    <label for="pxi_persona_mode">เพอร์โซนาของผู้ใช้ในโหมด Last Message</label>
+                    <div class="pxi-row">
+                        <select id="pxi_persona_mode" class="text_pole pxi-grow">
+                            <option value="auto">อัตโนมัติ — ส่งไปเมื่อผู้ใช้อยู่ในฉากเท่านั้น</option>
+                            <option value="always">บังคับใส่เสมอ</option>
+                            <option value="never">บังคับตัดออกเสมอ</option>
+                        </select>
+                        <div class="menu_button menu_button_icon" id="pxi_persona_refresh" title="ตรวจฉากล่าสุดใหม่"><i class="fa-solid fa-rotate"></i></div>
+                    </div>
+                    <div id="pxi_persona_hint" class="pxi-note"></div>
+                    <small class="pxi-hint">ตรวจด้วยโค้ดล้วน ๆ ไม่เรียก AI • บรรทัดด้านบนอัปเดตเองเมื่อมีข้อความใหม่ หรือกดปุ่มรีเฟรชได้ • การตรวจจริงตอนกดเจนอ่านฉากสด ๆ เสมอ ไม่ค้าง • โหมดอัตโนมัติดูจากชื่อผู้ใช้และสรรพนามบุรุษที่ 2 (คุณ / นาย / you) ถ้าตรวจพลาดบ่อยให้สลับไปโหมดบังคับ</small>
+
                     <div class="pxi-grid3">
                         <div>
                             <label for="pxi_ctx_messages">ข้อความล่าสุด</label>
