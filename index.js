@@ -341,6 +341,54 @@ const BINDINGS = [
 
 let isBusy = false;
 let lastAnalysis = '';
+
+/* ---------- งานที่กำลังวิ่ง: ใช้ทั้งปุ่ม Stop และแถบสถานะ ---------- */
+const activeControllers = new Set();
+let userAborted = false;
+let wakeLock = null;
+
+/** เวลาสะสมที่หน้าเว็บถูกพับ/สลับไปแอปอื่น นับตั้งแต่เริ่มคำขอ */
+let hiddenSince = document?.hidden ? Date.now() : 0;
+let hiddenTotal = 0;
+
+function trackVisibility() {
+    if (typeof document?.addEventListener !== 'function') return;
+    document.addEventListener('visibilitychange', () => {
+        if (document.hidden) {
+            hiddenSince = Date.now();
+            return;
+        }
+        if (hiddenSince) hiddenTotal += Date.now() - hiddenSince;
+        hiddenSince = 0;
+        if (activeControllers.size) reacquireWakeLock();
+    });
+}
+
+/** เวลาที่หน้าเว็บถูกพับไปแล้วทั้งหมด ณ ตอนนี้ */
+function hiddenElapsed() {
+    return hiddenTotal + (hiddenSince ? Date.now() - hiddenSince : 0);
+}
+
+async function reacquireWakeLock() {
+    try {
+        if (!navigator?.wakeLock?.request) return;
+        if (wakeLock && !wakeLock.released) return;
+        wakeLock = await navigator.wakeLock.request('screen');
+    } catch { /* ไม่รองรับหรือถูกปฏิเสธ ไม่เป็นไร */ }
+}
+
+async function releaseWakeLock() {
+    try { await wakeLock?.release?.(); } catch { /* ignore */ }
+    wakeLock = null;
+}
+
+function abortActiveRequests() {
+    userAborted = true;
+    for (const controller of activeControllers) {
+        try { controller.abort(); } catch { /* ignore */ }
+    }
+    activeControllers.clear();
+}
 let isSwipePromptOpen = false;
 let connectionService = null;
 
@@ -608,7 +656,18 @@ function assertReachableScheme(url, stage) {
 async function requestRaw(url, options, timeoutSec, stage) {
     assertReachableScheme(url, stage);
     const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), Math.max(5, Number(timeoutSec) || 60) * 1000);
+    activeControllers.add(controller);
+
+    // นับ timeout เฉพาะเวลาที่หน้าเว็บเปิดอยู่จริง
+    // ถ้าพับจอไปเล่นแอปอื่น timer ของเบราว์เซอร์จะถูกหน่วงแล้วยิงรัวตอนกลับมา
+    // ถ้า abort ตามนั้นตรง ๆ คำขอที่ยังวิ่งอยู่จะถูกตัดทิ้งทันทีที่ผู้ใช้กลับมา
+    const limitMs = Math.max(5, Number(timeoutSec) || 60) * 1000;
+    const startedAt = Date.now();
+    const hiddenAtStart = hiddenElapsed();
+    const timer = setInterval(() => {
+        const activeMs = (Date.now() - startedAt) - (hiddenElapsed() - hiddenAtStart);
+        if (activeMs >= limitMs) controller.abort();
+    }, 1000);
     try {
         const response = await fetch(url, { ...options, signal: controller.signal });
         const raw = await response.text();
@@ -620,10 +679,15 @@ async function requestRaw(url, options, timeoutSec, stage) {
         return raw;
     } catch (error) {
         if (error instanceof PxiError) throw error;
-        if (error?.name === 'AbortError') throw new PxiError('หมดเวลาเชื่อมต่อ (timeout)', { stage, hints: ['เพิ่มค่า Timeout ในหน้าตั้งค่า หรือลด steps / ขนาดภาพลง'] });
+        if (error?.name === 'AbortError') {
+            if (userAborted) throw new PxiError('ยกเลิกโดยผู้ใช้', { stage, hints: ['กดปุ่ม Stop ระหว่างกำลังทำงาน'] });
+            throw new PxiError('หมดเวลาเชื่อมต่อ (timeout)', { stage, hints: ['เพิ่มค่า Timeout ในหน้าตั้งค่า หรือลด steps / ขนาดภาพลง'] });
+        }
+        if (userAborted) throw new PxiError('ยกเลิกโดยผู้ใช้', { stage, hints: ['กดปุ่ม Stop ระหว่างกำลังทำงาน'] });
         throw new PxiError(String(error?.message || error), { stage, status: 0 });
     } finally {
-        clearTimeout(timer);
+        clearInterval(timer);
+        activeControllers.delete(controller);
     }
 }
 
@@ -1029,6 +1093,7 @@ async function stage1GeneratePrompt(mode, extra) {
     let extraText = String(extra || '');
 
     if (s.cot_mode === 'heavy') {
+        setProgress('analyse');
         setStatus('① รอบที่ 1 — กำลังวิเคราะห์ฉาก...');
         const analysis = await callStage1(await buildAnalysisMessages(mode, extraText));
         const notes = String(analysis.text || '').trim();
@@ -1037,6 +1102,7 @@ async function stage1GeneratePrompt(mode, extra) {
             lastAnalysis = notes;
             extraText = `${extraText}\n\n--- Scene analysis (already worked out, follow it) ---\n${notes}`.trim();
         }
+        setProgress('prompt');
         setStatus('① รอบที่ 2 — กำลังเขียนแท็ก...');
     }
 
@@ -1369,6 +1435,7 @@ async function generateWithRetry(prompt, { quiet = false } = {}) {
     let current = String(prompt || '').trim();
     for (let attempt = 1; attempt <= MAX_GENERATE_ATTEMPTS; attempt++) {
         try {
+            setProgress('image', attempt > 1 ? `ครั้งที่ ${attempt}` : '');
             setStatus(attempt === 1 ? '② กำลังเจนรูป...' : `② กำลังเจนรูป (ครั้งที่ ${attempt})...`);
             if (!quiet && attempt === 1) notify('กำลังเจนรูป (Connection 2)...');
             const image = await stage2GenerateImage(current);
@@ -1376,6 +1443,7 @@ async function generateWithRetry(prompt, { quiet = false } = {}) {
         } catch (error) {
             console.error(LOG, error);
             setStatus(String(error?.message || error), true);
+            if (userAborted) { setStatus('หยุดแล้ว'); return null; }
             const last = attempt >= MAX_GENERATE_ATTEMPTS;
             await showErrorPopup(error, { retry: !last });
             if (last) {
@@ -1449,6 +1517,69 @@ async function postImageMessage(imagePath, prompt, mode) {
     setTimeout(() => {
         try { (context.scrollOnMediaLoad || context.scrollChatToBottom)?.(); } catch { /* ignore */ }
     }, 200);
+}
+
+/* ================================================================== */
+/* แถบสถานะ + ปุ่ม Stop ในช่องพิมพ์ของ SillyTavern                     */
+/* ================================================================== */
+
+const PROGRESS_STEPS = {
+    style: { label: 'เลือกสไตล์', percent: 5 },
+    analyse: { label: 'วิเคราะห์ฉาก', percent: 20 },
+    prompt: { label: 'เขียน prompt', percent: 40 },
+    review: { label: 'รอตรวจ prompt', percent: 55 },
+    image: { label: 'เจนรูป', percent: 75 },
+    upload: { label: 'บันทึกรูป', percent: 92 },
+    done: { label: 'เสร็จสิ้น', percent: 100 },
+};
+
+function ensureProgressUi() {
+    const form = document.getElementById('rightSendForm');
+    if (form && !document.getElementById('pxi_stop')) {
+        const stop = document.createElement('div');
+        stop.id = 'pxi_stop';
+        stop.className = 'pxi-stop pxi-hidden';
+        stop.title = 'หยุดการสร้างภาพของ Proxy Image Gen';
+        stop.innerHTML = '<i class="fa-solid fa-circle-stop"></i>';
+        stop.addEventListener('click', () => {
+            abortActiveRequests();
+            notify('หยุดการทำงานแล้ว', 'warning');
+        });
+        const sendButton = document.getElementById('send_but');
+        if (sendButton) form.insertBefore(stop, sendButton);
+        else form.append(stop);
+    }
+
+    const holder = document.getElementById('send_form');
+    if (holder && !document.getElementById('pxi_progress')) {
+        const bar = document.createElement('div');
+        bar.id = 'pxi_progress';
+        bar.className = 'pxi-progress pxi-hidden';
+        bar.innerHTML = '<div class="pxi-progress-fill"></div><span class="pxi-progress-text"></span>';
+        holder.prepend(bar);
+    }
+}
+
+/** อัปเดตแถบสถานะ ส่ง null เพื่อซ่อน */
+function setProgress(step, detail = '') {
+    ensureProgressUi();
+    const bar = document.getElementById('pxi_progress');
+    const stop = document.getElementById('pxi_stop');
+    if (!bar) return;
+
+    if (!step) {
+        bar.classList.add('pxi-hidden');
+        stop?.classList.add('pxi-hidden');
+        return;
+    }
+
+    const info = PROGRESS_STEPS[step] || { label: step, percent: 0 };
+    bar.classList.remove('pxi-hidden');
+    stop?.classList.toggle('pxi-hidden', step === 'done');
+    const fill = bar.querySelector('.pxi-progress-fill');
+    const text = bar.querySelector('.pxi-progress-text');
+    if (fill) fill.style.width = `${info.percent}%`;
+    if (text) text.textContent = detail ? `${info.label} — ${detail}` : info.label;
 }
 
 /* ================================================================== */
@@ -1528,6 +1659,10 @@ async function runPipeline({ mode = 'free', rawPrompt = '', extra = '', quiet = 
     if (!s.enabled) { notify('Extension ถูกปิดอยู่', 'warning'); return null; }
     if (isBusy) { notify('กำลังทำงานอยู่ กรุณารอสักครู่', 'warning'); return null; }
     isBusy = true;
+    userAborted = false;
+    hiddenTotal = 0;
+    hiddenSince = document?.hidden ? Date.now() : 0;
+    reacquireWakeLock();
     try {
         let prompt = String(rawPrompt || '').trim();
         const fromStage1 = !prompt;
@@ -1535,18 +1670,21 @@ async function runPipeline({ mode = 'free', rawPrompt = '', extra = '', quiet = 
         runStyleOverride = '';
 
         if (fromStage1 && paramsAreGpt() && !s.remember_style) {
+            setProgress('style');
             const chosen = await askStyle(mode);
             if (!chosen) { setStatus('ยกเลิกแล้ว'); return null; }
             runStyleOverride = chosen;
         }
 
         if (fromStage1) {
+            setProgress('prompt', mode);
             setStatus(`① กำลังสร้าง prompt (${mode})...`);
             if (!quiet) notify('กำลังสร้าง prompt (Connection 1)...');
             prompt = await stage1GeneratePrompt(mode, mergeExtra(extra));
         }
 
         if (fromStage1 && s.edit_before) {
+            setProgress('review');
             setStatus('⇄ รอตรวจ/แก้ prompt...');
             const title = lastAnalysis
                 ? 'แก้ prompt ก่อนส่งไป Connection 2 (ดูผลวิเคราะห์ฉากได้ใน console)'
@@ -1558,8 +1696,10 @@ async function runPipeline({ mode = 'free', rawPrompt = '', extra = '', quiet = 
 
         const result = await generateWithRetry(prompt, { quiet });
         if (!result) return null;
+        setProgress('upload');
         const path = result.image.kind === 'base64' ? await uploadBase64(result.image.value) : result.image.value;
         await postImageMessage(path, result.prompt, mode);
+        setProgress('done');
         setStatus('เสร็จสิ้น');
         return path;
     } catch (error) {
@@ -1570,6 +1710,9 @@ async function runPipeline({ mode = 'free', rawPrompt = '', extra = '', quiet = 
     } finally {
         isBusy = false;
         runStyleOverride = '';
+        userAborted = false;
+        releaseWakeLock();
+        setTimeout(() => setProgress(null), 900);
     }
 }
 
@@ -1646,6 +1789,8 @@ async function onImageSwiped({ message, direction }) {
     if (isBusy) { notify('กำลังทำงานอยู่ กรุณารอสักครู่', 'warning'); return; }
 
     isBusy = true;
+    userAborted = false;
+    reacquireWakeLock();
     try {
         notify('กำลังเจนรูปใบใหม่...');
         const result = await generateWithRetry(edited, { quiet: true });
@@ -1662,6 +1807,9 @@ async function onImageSwiped({ message, direction }) {
         await showErrorPopup(error);
     } finally {
         isBusy = false;
+        userAborted = false;
+        releaseWakeLock();
+        setTimeout(() => setProgress(null), 900);
     }
 }
 

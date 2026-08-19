@@ -317,3 +317,57 @@
     width: 100%;
     margin: 8px 0 6px 0;
 }
+
+/* ---------- ปุ่ม Stop ในแถบส่งข้อความ ---------- */
+#pxi_stop.pxi-stop {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    opacity: 0.85;
+    color: var(--warning, #ff6b6b);
+    padding: 0 4px;
+}
+
+#pxi_stop.pxi-stop:hover {
+    opacity: 1;
+}
+
+#pxi_stop.pxi-hidden {
+    display: none !important;
+}
+
+/* ---------- แถบสถานะเหนือช่องพิมพ์ ---------- */
+#pxi_progress.pxi-progress {
+    position: relative;
+    order: -1;
+    width: 100%;
+    height: 16px;
+    margin-bottom: 2px;
+    border-radius: 8px;
+    overflow: hidden;
+    background-color: var(--black30a);
+}
+
+#pxi_progress.pxi-hidden {
+    display: none !important;
+}
+
+#pxi_progress .pxi-progress-fill {
+    height: 100%;
+    width: 0;
+    background-color: var(--SmartThemeQuoteColor, #6bcB77);
+    opacity: 0.35;
+    transition: width 0.35s ease;
+}
+
+#pxi_progress .pxi-progress-text {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.7em;
+    white-space: nowrap;
+    opacity: 0.9;
+}
