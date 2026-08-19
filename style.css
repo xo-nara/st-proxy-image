@@ -300,3 +300,20 @@
     font-family: var(--monoFontFamily, monospace);
     font-size: 0.75em;
 }
+
+.pxi-root #pxi_gpt_size_hint {
+    white-space: pre-line;
+}
+
+.pxi-stylebox {
+    text-align: left;
+}
+
+.pxi-stylebox h3 {
+    margin: 0 0 4px 0;
+}
+
+.pxi-stylebox select {
+    width: 100%;
+    margin: 8px 0 6px 0;
+}

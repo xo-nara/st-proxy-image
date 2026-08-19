@@ -143,70 +143,13 @@
                 </div>
             </div>
 
-            <!-- ============ PROMPT TEMPLATES ============ -->
-            <div class="inline-drawer pxi-sub">
-                <div class="inline-drawer-toggle inline-drawer-header">
-                    <b>② Image Prompt Templates</b>
-                    <div class="inline-drawer-icon fa-solid fa-circle-chevron-down down"></div>
-                </div>
-                <div class="inline-drawer-content">
-                    <label for="pxi_tpl_mode">โหมด</label>
-                    <select id="pxi_tpl_mode" class="text_pole">
-                        <option value="portrait">Portrait (ตัวละคร)</option>
-                        <option value="selfie">Selfie (โคลสอัพหน้าตัวละคร)</option>
-                        <option value="user">User (เพอร์โซนาผู้ใช้)</option>
-                        <option value="last">Last Message (ฉากล่าสุด)</option>
-                        <option value="manga">Manga Panel (แบ่งช่อง)</option>
-                        <option value="free">Free / Scene (คำสั่งทั่วไป)</option>
-                    </select>
-
-                    <label for="pxi_tpl_sys">System</label>
-                    <textarea id="pxi_tpl_sys" class="text_pole textarea_compact" rows="9"></textarea>
-
-                    <label for="pxi_extra_instruction">Extra instruction</label>
-                    <textarea id="pxi_extra_instruction" class="text_pole textarea_compact" rows="2" placeholder="เช่น เน้นโทนกลางคืน, ห้ามใส่หมวก"></textarea>
-                    <div class="pxi-note">
-                        <b>ข้อความนี้คือค่าของ <code>&#123;&#123;extra&#125;&#125;</code></b><br>
-                        ถูกแทรกท้าย <b>user message</b> ที่ระบบประกอบให้ เป็นบล็อก <code>--- Extra instruction ---</code> ก่อนบรรทัดปิดท้าย ใช้ได้ทุกหมวด<br>
-                        ข้อความที่พิมพ์หลัง <code>/pxi</code> จะถูกต่อเข้ากับช่องนี้ (ช่องนี้ขึ้นก่อน)<br>
-                        ช่อง System ด้านบนไม่ต้องเขียน <code>&#123;&#123;extra&#125;&#125;</code> เอง
-                    </div>
-
-                    <div class="pxi-note">อัปเกรดจากเวอร์ชันก่อน? template ที่บันทึกไว้จะไม่ถูกเขียนทับอัตโนมัติ — กด "รีเซ็ตทั้งหมด" เพื่อรับ default ตัวใหม่ (cast/ตำแหน่ง/ส่วนสูง/style tail)</div>
-                    <div class="pxi-note" id="pxi_manga_note">โหมด Manga Panel: แนะนำขนาดแนวตั้ง (เช่น 768x1344) สำหรับ 4koma แนวตั้ง และแนวนอนสำหรับสตริปแนวนอน • ถ้าอยากได้หน้าขาวดำจริง ๆ ให้เคลียร์ช่อง Positive suffix ที่มี very aesthetic/masterpiece ออกก่อน เพราะมันดันภาพไปทางภาพสีเดี่ยว</div>
-                    <div class="pxi-row">
-                        <div class="menu_button menu_button_icon" id="pxi_tpl_reset"><i class="fa-solid fa-rotate-left"></i><span>รีเซ็ตโหมดนี้</span></div>
-                        <div class="menu_button menu_button_icon" id="pxi_tpl_reset_all"><i class="fa-solid fa-broom"></i><span>รีเซ็ตทั้งหมด</span></div>
-                    </div>
-                </div>
-            </div>
-
             <!-- ============ CONTEXT BUDGET ============ -->
             <div class="inline-drawer pxi-sub">
                 <div class="inline-drawer-toggle inline-drawer-header">
-                    <b>③ Context Budget</b>
+                    <b>② Context Budget</b>
                     <div class="inline-drawer-icon fa-solid fa-circle-chevron-down down"></div>
                 </div>
                 <div class="inline-drawer-content">
-                    <label for="pxi_tag_hints">Pinned tag glossary (ไม่บังคับ)</label>
-                    <textarea id="pxi_tag_hints" class="text_pole textarea_compact pxi-mono" rows="3" placeholder="tamamo cross (umamusume), umamusume&#10;usada pekora, usada pekora (1st costume), hololive"></textarea>
-                    <div class="pxi-note">
-                        ปักหมุดแท็กของตัวละครที่โมเดลมักจำไม่ได้หรือสะกดผิด — ระบบจะแนบเข้า Connection 1 ทุกครั้ง และสั่งให้ใช้สะกดตามนี้ตรง ๆ โดยไม่ต้องเดาเอง<br>
-                        เขียนบรรทัดละตัวละคร ใส่แท็กซีรีส์และแท็กชุดต่อท้ายได้ • เว้นว่างไว้ก็ได้ถ้าไม่ต้องใช้
-                    </div>
-
-                    <label for="pxi_persona_mode">เพอร์โซนาของผู้ใช้ในโหมด Last Message</label>
-                    <div class="pxi-row">
-                        <select id="pxi_persona_mode" class="text_pole pxi-grow">
-                            <option value="auto">อัตโนมัติ — ส่งไปเมื่อผู้ใช้อยู่ในฉากเท่านั้น</option>
-                            <option value="always">บังคับใส่เสมอ</option>
-                            <option value="never">บังคับตัดออกเสมอ</option>
-                        </select>
-                        <div class="menu_button menu_button_icon" id="pxi_persona_refresh" title="ตรวจฉากล่าสุดใหม่"><i class="fa-solid fa-rotate"></i></div>
-                    </div>
-                    <div id="pxi_persona_hint" class="pxi-note"></div>
-                    <small class="pxi-hint">ตรวจด้วยโค้ดล้วน ๆ ไม่เรียก AI • บรรทัดด้านบนอัปเดตเองเมื่อมีข้อความใหม่ หรือกดปุ่มรีเฟรชได้ • การตรวจจริงตอนกดเจนอ่านฉากสด ๆ เสมอ ไม่ค้าง • โหมดอัตโนมัติดูจากชื่อผู้ใช้และสรรพนามบุรุษที่ 2 (คุณ / นาย / you) ถ้าตรวจพลาดบ่อยให้สลับไปโหมดบังคับ</small>
-
                     <div class="pxi-grid3">
                         <div>
                             <label for="pxi_ctx_messages">ข้อความล่าสุด</label>
@@ -223,10 +166,11 @@
                     </div>
                     <div class="pxi-note">
                         <b>ค่าที่แนะนำ</b><br>
-                        ข้อความล่าสุด <b>0-4</b> (มาตรฐาน 3) • ตัด/ข้อความ <b>400-1500</b> (มาตรฐาน 1200) • เพดานรวม <b>1000-10000</b> (มาตรฐาน 10000)<br>
-                        ช่อง "ตัด/ข้อความ" คูณ 3 คือความยาวสูงสุดของข้อความล่าสุด เช่น 600 = ข้อความล่าสุดได้ 1800 ตัวอักษร<br>
-                        ตั้ง "ข้อความล่าสุด" เป็น 1 ไม่มีประโยชน์ เพราะจะส่งข้อความเดียวกันซ้ำสองรอบ (ทั้งใน chat และ lastMessage) ใช้ 0 หรือ 2-4 แทน<br>
-                        ถ้าตั้งสูงเกินจน Connection 1 ไม่ยอมตอบหรือช้ามาก ให้ลดเพดานรวมลงก่อนเป็นอย่างแรก
+                        ข้อความล่าสุด <b>0</b> • ตัด/ข้อความ <b>1200</b> • เพดานรวม <b>10000</b><br>
+                        <b>แนะนำให้ใช้ 0</b> — อ่านเฉพาะข้อความล่าสุดข้อความเดียว ไม่ย้อนไปไกล ตรงกับฉากปัจจุบันที่สุด และลดโอกาสที่เนื้อหาเก่าที่สุ่มเสี่ยงจะไปกระตุ้นฟิลเตอร์ของ Connection 1<br>
+                        ช่อง "ตัด/ข้อความ" คูณ 3 คือความยาวสูงสุดของข้อความล่าสุด เช่น 1200 = ข้อความล่าสุดได้ 3600 ตัวอักษร<br>
+                        ตั้งมากกว่า 0 เมื่อจำเป็นจริง ๆ เท่านั้น เช่นโหมด Manga Panel ที่ต้องใช้หลายฉากมาแบ่งช่อง<br>
+                        ถ้า Connection 1 ไม่ยอมตอบหรือช้ามาก ให้ลดเพดานรวมลงก่อนเป็นอย่างแรก
                     </div>
                     <div id="pxi_ctx_hint" class="pxi-note"></div>
 
@@ -238,6 +182,52 @@
                         <input id="pxi_strip_system" type="checkbox">
                         <span>ข้ามข้อความระบบ (system / hidden)</span>
                     </label>
+                </div>
+            </div>
+
+            <!-- ============ PROMPT TEMPLATES ============ -->
+            <div class="inline-drawer pxi-sub">
+                <div class="inline-drawer-toggle inline-drawer-header">
+                    <b>③ Image Prompt Templates</b>
+                    <div class="inline-drawer-icon fa-solid fa-circle-chevron-down down"></div>
+                </div>
+                <div class="inline-drawer-content">
+                    <label for="pxi_tpl_engine">ชุด template</label>
+                    <select id="pxi_tpl_engine" class="text_pole">
+                        <option value="nai">NovelAI / Diffusion — prompt เป็นแท็ก</option>
+                        <option value="gpt">GPT-Image — prompt เป็นประโยคบรรยาย</option>
+                    </select>
+                    <small class="pxi-hint">สองชุดเก็บแยกกันคนละที่ สลับไปมาได้ตลอด ที่แก้ไว้ไม่หายและไม่ทับกัน</small>
+
+                    <label for="pxi_tpl_mode">โหมด</label>
+                    <select id="pxi_tpl_mode" class="text_pole">
+                        <option value="portrait">Portrait (ตัวละคร)</option>
+                        <option value="selfie">Selfie (โคลสอัพหน้าตัวละคร)</option>
+                        <option value="user">User (เพอร์โซนาผู้ใช้)</option>
+                        <option value="last">Last Message (ฉากล่าสุด)</option>
+                        <option value="manga">Manga Panel (แบ่งช่อง)</option>
+                        <option value="free">Free / Scene (คำสั่งทั่วไป)</option>
+                    </select>
+
+                    <div id="pxi_tpl_set" class="pxi-note"></div>
+                    <label for="pxi_tpl_sys">System</label>
+                    <textarea id="pxi_tpl_sys" class="text_pole textarea_compact" rows="9"></textarea>
+
+                    <label for="pxi_extra_instruction">Extra instruction</label>
+                    <textarea id="pxi_extra_instruction" class="text_pole textarea_compact" rows="2" placeholder="เช่น เน้นโทนกลางคืน, ห้ามใส่หมวก"></textarea>
+                    <div class="pxi-note">
+                        <b>ข้อความนี้คือค่าของ <code>&#123;&#123;extra&#125;&#125;</code></b><br>
+                        ถูกแทรกท้าย <b>user message</b> ที่ระบบประกอบให้ เป็นบล็อก <code>--- Extra instruction ---</code> ก่อนบรรทัดปิดท้าย ใช้ได้ทุกหมวด<br>
+                        ข้อความที่พิมพ์หลัง <code>/pxi</code> จะถูกต่อเข้ากับช่องนี้ (ช่องนี้ขึ้นก่อน)<br>
+                        ช่อง System ด้านบนไม่ต้องเขียน <code>&#123;&#123;extra&#125;&#125;</code> เอง
+                    </div>
+
+                    <div class="pxi-note">อัปเกรดจากเวอร์ชันก่อน? template ที่บันทึกไว้จะไม่ถูกเขียนทับอัตโนมัติ — กด "รีเซ็ตทั้งหมด" เพื่อรับ default ตัวใหม่ (cast/ตำแหน่ง/ส่วนสูง/style tail)</div>
+                    <div class="pxi-note" id="pxi_manga_note">โหมด Manga Panel: โหมดนี้ใช้หลายฉากมาแบ่งช่อง ถ้า "ข้อความล่าสุด" ในหมวด ② เป็น 0 จะได้แค่ฉากเดียว — ตั้งเป็น 2-4 ก่อนใช้โหมดนี้ • แนะนำขนาดแนวตั้ง (เช่น 768x1344) สำหรับ 4koma แนวตั้ง และแนวนอนสำหรับสตริปแนวนอน • ถ้าอยากได้หน้าขาวดำจริง ๆ ให้เคลียร์ช่อง Positive suffix ที่มี very aesthetic/masterpiece ออกก่อน เพราะมันดันภาพไปทางภาพสีเดี่ยว</div>
+                    <div class="pxi-row">
+                        <div class="menu_button menu_button_icon" id="pxi_tpl_reset"><i class="fa-solid fa-rotate-left"></i><span>รีเซ็ตโหมดนี้</span></div>
+                        <div class="menu_button menu_button_icon" id="pxi_tpl_reset_all"><i class="fa-solid fa-broom"></i><span>รีเซ็ตทั้งหมด</span></div>
+                    </div>
                 </div>
             </div>
 
@@ -276,14 +266,24 @@
                         <div class="menu_button menu_button_icon" id="pxi_anlas_view"><i class="fa-solid fa-coins"></i><span>View my Anlas</span></div>
 
                         <label for="pxi_nai_model">Model</label>
-                        <select id="pxi_nai_model" class="text_pole">
-                            <option value="nai-diffusion-4-5-full">NAI Diffusion Anime V4.5 (Full)</option>
-                            <option value="nai-diffusion-4-5-curated">NAI Diffusion Anime V4.5 (Curated)</option>
-                            <option value="nai-diffusion-4-full">NAI Diffusion Anime V4 (Full)</option>
-                            <option value="nai-diffusion-4-curated-preview">NAI Diffusion Anime V4 (Curated)</option>
-                            <option value="nai-diffusion-3">NAI Diffusion Anime V3</option>
-                            <option value="nai-diffusion-furry-3">NAI Diffusion Furry V3</option>
-                        </select>
+                        <input id="pxi_nai_model" class="text_pole" type="text" list="pxi_nai_model_list" placeholder="nai-diffusion-4-5-full">
+                        <datalist id="pxi_nai_model_list"></datalist>
+                        <small class="pxi-hint">เลือกจากรายการหรือพิมพ์ชื่อโมเดลเองได้ — พอ NovelAI ปล่อยรุ่นใหม่ (เช่น V5) พิมพ์ชื่อได้ทันทีโดยไม่ต้องรออัปเดต extension</small>
+
+                        <label for="pxi_model_list_url">Remote model list (ไม่บังคับ)</label>
+                        <div class="pxi-row">
+                            <input id="pxi_model_list_url" class="text_pole pxi-grow" type="text" placeholder="https://raw.githubusercontent.com/.../models.json">
+                            <div class="menu_button menu_button_icon" id="pxi_model_list_fetch" title="ดึงรายชื่อโมเดล"><i class="fa-solid fa-cloud-arrow-down"></i></div>
+                        </div>
+                        <label class="checkbox_label" for="pxi_model_list_auto">
+                            <input id="pxi_model_list_auto" type="checkbox">
+                            <span>ดึงรายชื่อโมเดลอัตโนมัติตอนเปิด SillyTavern</span>
+                        </label>
+                        <div class="pxi-note">
+                            ไฟล์ JSON รูปแบบ <code>["nai-diffusion-5-full", ...]</code> หรือละเอียดกว่านั้น<br>
+                            <code>[{"id":"nai-diffusion-5-full","label":"V5 Full","suffix":"...","negative":"..."}]</code><br>
+                            ใส่ <code>suffix</code> และ <code>negative</code> ได้ด้วย ปุ่ม "ใส่ค่าที่ NovelAI แนะนำ" จะหยิบไปใช้กับโมเดลนั้นให้เอง
+                        </div>
                     </div>
 
                     <div class="pxi-c2-custom">
@@ -336,7 +336,121 @@
                 </div>
                 <div class="inline-drawer-content">
 
-                    <div class="pxi-fieldset">
+                    <label for="pxi_param_engine">ชุดพารามิเตอร์</label>
+                    <select id="pxi_param_engine" class="text_pole">
+                        <option value="nai">NovelAI / Diffusion</option>
+                        <option value="gpt">GPT-Image</option>
+                    </select>
+                    <small class="pxi-hint">เลือกเอง ไม่มีการเดาจากชื่อโมเดล • ค่าของสองชุดเก็บแยกกัน สลับกลับมาแล้วได้ค่าเดิม • ไม่เกี่ยวกับชุด template ในหมวด ②</small>
+                    <hr class="sysHR">
+
+                    <div class="pxi-fieldset pxi-p-gpt">
+                        <div class="pxi-fieldset-title">GPT-Image</div>
+
+                        <label for="pxi_gpt_model">Model</label>
+                        <input id="pxi_gpt_model" class="text_pole" type="text" list="pxi_gpt_model_list" placeholder="gpt-image-2">
+                        <datalist id="pxi_gpt_model_list">
+                            <option value="gpt-image-2"></option>
+                            <option value="gpt-image-2-2026-04-21"></option>
+                            <option value="gpt-image-1.5"></option>
+                            <option value="gpt-image-1"></option>
+                            <option value="gpt-image-1-mini"></option>
+                            <option value="chatgpt-image-latest"></option>
+                        </datalist>
+
+                        <label for="pxi_gpt_size">ขนาดภาพ</label>
+                        <input id="pxi_gpt_size" class="text_pole" type="text" list="pxi_gpt_size_list" placeholder="auto">
+                        <datalist id="pxi_gpt_size_list">
+                            <option value="auto"></option>
+                            <option value="1024x1024"></option>
+                            <option value="1536x1024"></option>
+                            <option value="1024x1536"></option>
+                            <option value="1344x768"></option>
+                            <option value="768x1344"></option>
+                            <option value="1920x1080"></option>
+                        </datalist>
+                        <div id="pxi_gpt_size_hint" class="pxi-note"></div>
+
+                        <div class="pxi-grid2">
+                            <div>
+                                <label for="pxi_gpt_quality">Quality</label>
+                                <select id="pxi_gpt_quality" class="text_pole">
+                                    <option value="auto">auto</option>
+                                    <option value="low">low</option>
+                                    <option value="medium">medium</option>
+                                    <option value="high">high</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label for="pxi_gpt_moderation">Moderation</label>
+                                <select id="pxi_gpt_moderation" class="text_pole">
+                                    <option value="auto">auto</option>
+                                    <option value="low">low (กรองหลวมกว่า)</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="pxi-grid2">
+                            <div>
+                                <label for="pxi_gpt_output_format">Output format</label>
+                                <select id="pxi_gpt_output_format" class="text_pole">
+                                    <option value="png">png</option>
+                                    <option value="jpeg">jpeg</option>
+                                    <option value="webp">webp</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label for="pxi_gpt_output_compression">Compression (jpeg/webp)</label>
+                                <input id="pxi_gpt_output_compression" class="text_pole" type="number" min="0" max="100" step="5">
+                            </div>
+                        </div>
+
+                        <div class="pxi-grid2">
+                            <div>
+                                <label for="pxi_gpt_n">จำนวนภาพต่อครั้ง (n)</label>
+                                <input id="pxi_gpt_n" class="text_pole" type="number" min="1" max="10" step="1">
+                            </div>
+                        </div>
+
+                        <div class="pxi-style-wrap">
+                            <label for="pxi_gpt_style">สไตล์เริ่มต้น</label>
+                            <select id="pxi_gpt_style" class="text_pole"></select>
+                            <small class="pxi-hint">ใช้เป็นค่าตั้งต้นใน popup ตอนกดสร้าง และใช้ตรง ๆ เมื่อติ๊ก "จำสไตล์ภาพไว้" ด้านล่าง • ต่อท้าย system prompt ให้เอง ไม่ต้องแก้ template</small>
+
+                            <div class="pxi-style-custom pxi-hidden">
+                                <label for="pxi_gpt_style_custom">ข้อความสไตล์ที่เขียนเอง</label>
+                                <textarea id="pxi_gpt_style_custom" class="text_pole textarea_compact" rows="2" placeholder="เช่น ukiyo-e woodblock print, flat colour, bold outlines"></textarea>
+                            </div>
+                        </div>
+
+                        <label class="checkbox_label" for="pxi_remember_style">
+                            <input id="pxi_remember_style" type="checkbox">
+                            <span>จำสไตล์ภาพไว้ ไม่ต้องถามตอนกดสร้าง <small class="pxi-hint pxi-inline">(ปลดติ๊กเพื่อให้ถามทุกครั้ง)</small></span>
+                        </label>
+                        <label class="checkbox_label" for="pxi_style_per_mode">
+                            <input id="pxi_style_per_mode" type="checkbox">
+                            <span>จำสไตล์แยกตามโหมด <small class="pxi-hint pxi-inline">(Portrait, Manga ฯลฯ จำคนละสไตล์)</small></span>
+                        </label>
+
+                        <label for="pxi_gpt_background">Background</label>
+                        <select id="pxi_gpt_background" class="text_pole">
+                            <option value="auto">auto</option>
+                            <option value="opaque">opaque</option>
+                            <option value="transparent">transparent (ต้องใช้ png หรือ webp)</option>
+                        </select>
+
+<small class="pxi-hint">ต่อท้าย prompt เป็นคำสั่งสไตล์ ไม่ต้องแก้ template เอง</small>
+
+                        <label for="pxi_gpt_extra">ข้อความต่อท้าย prompt (ไม่บังคับ)</label>
+                        <textarea id="pxi_gpt_extra" class="text_pole textarea_compact" rows="2" placeholder="เช่น shot on 85mm lens, shallow depth of field"></textarea>
+
+                        <div class="pxi-note">
+                            GPT-Image ไม่มี negative prompt, seed, steps หรือ CFG — ควบคุมด้วยคำบรรยายใน prompt แทน<br>
+                            คืนภาพเป็น base64 เสมอ ระบบจึงไม่ส่ง response_format ไปให้
+                        </div>
+                    </div>
+
+                    <div class="pxi-fieldset pxi-p-diffusion">
                         <div class="pxi-fieldset-title">ขนาดภาพ</div>
                         <label for="pxi_size_preset">ขนาดสำเร็จรูป</label>
                         <select id="pxi_size_preset" class="text_pole"></select>
@@ -350,7 +464,7 @@
                         <small class="pxi-hint">ค่าจะถูกปัดเป็นทวีคูณของ 64 อัตโนมัติ • ปุ่ม "ใส่ค่าที่ NovelAI แนะนำ" จะไม่แตะขนาดภาพ</small>
                     </div>
 
-                    <div class="pxi-fieldset">
+                    <div class="pxi-fieldset pxi-p-diffusion">
                         <div class="pxi-fieldset-title">การสุ่มภาพ</div>
                         <div class="pxi-grid2">
                             <div>
@@ -403,7 +517,7 @@
                         </div>
                     </div>
 
-                    <div class="pxi-fieldset">
+                    <div class="pxi-fieldset pxi-p-diffusion">
                         <div class="pxi-fieldset-title">ตัวเลือกเสริม</div>
                         <label class="checkbox_label" for="pxi_variety"><input id="pxi_variety" type="checkbox"><span>Variety boost <small class="pxi-hint pxi-inline">(V4 ขึ้นไป กันภาพหน้าซ้ำ)</small></span></label>
                         <label class="checkbox_label" for="pxi_decrisper"><input id="pxi_decrisper" type="checkbox"><span>Decrisper <small class="pxi-hint pxi-inline">(dynamic thresholding เมื่อ CFG สูง)</small></span></label>
@@ -412,6 +526,29 @@
                     </div>
 
                     <div class="pxi-fieldset">
+                        <div class="pxi-fieldset-title">ข้อมูลประกอบ prompt</div>
+                        <label for="pxi_tag_hints">Pinned tag glossary (ไม่บังคับ)</label>
+                        <textarea id="pxi_tag_hints" class="text_pole textarea_compact pxi-mono" rows="3" placeholder="tamamo cross (umamusume), umamusume&#10;usada pekora, usada pekora (1st costume), hololive"></textarea>
+                        <div class="pxi-note">
+                            ปักหมุดแท็กของตัวละครที่โมเดลมักจำไม่ได้หรือสะกดผิด — ระบบจะแนบเข้า Connection 1 ทุกครั้ง และสั่งให้ใช้สะกดตามนี้ตรง ๆ โดยไม่ต้องเดาเอง<br>
+                            เขียนบรรทัดละตัวละคร ใส่แท็กซีรีส์และแท็กชุดต่อท้ายได้ • เว้นว่างไว้ก็ได้ถ้าไม่ต้องใช้
+                        </div>
+
+                        <label for="pxi_persona_mode">เพอร์โซนาของผู้ใช้ในโหมด Last Message</label>
+                        <div class="pxi-row">
+                            <select id="pxi_persona_mode" class="text_pole pxi-grow">
+                                <option value="auto">อัตโนมัติ — ส่งไปเมื่อผู้ใช้อยู่ในฉากเท่านั้น</option>
+                                <option value="always">บังคับใส่เสมอ</option>
+                                <option value="never">บังคับตัดออกเสมอ</option>
+                            </select>
+                            <div class="menu_button menu_button_icon" id="pxi_persona_refresh" title="ตรวจฉากล่าสุดใหม่"><i class="fa-solid fa-rotate"></i></div>
+                        </div>
+                        <div id="pxi_persona_hint" class="pxi-note"></div>
+                        <small class="pxi-hint">ตรวจด้วยโค้ดล้วน ๆ ไม่เรียก AI • บรรทัดด้านบนอัปเดตเองเมื่อมีข้อความใหม่ หรือกดปุ่มรีเฟรชได้ • การตรวจจริงตอนกดเจนอ่านฉากสด ๆ เสมอ ไม่ค้าง • โหมดอัตโนมัติดูจากชื่อผู้ใช้และสรรพนามบุรุษที่ 2 (คุณ / นาย / you) ถ้าตรวจพลาดบ่อยให้สลับไปโหมดบังคับ</small>
+
+                    </div>
+
+                    <div class="pxi-fieldset pxi-p-diffusion">
                         <div class="pxi-fieldset-title">แท็กประกอบ</div>
                         <div class="menu_button menu_button_icon pxi-c2-nai pxi-wide-button" id="pxi_nai_recommended"><i class="fa-solid fa-wand-sparkles"></i><span>ใส่ค่าที่ NovelAI แนะนำ (ทุกค่ายกเว้นขนาดภาพ)</span></div>
                         <label for="pxi_prefix">Positive prefix</label>
@@ -432,11 +569,11 @@
 
             <div class="inline-drawer pxi-sub">
                 <div class="inline-drawer-toggle inline-drawer-header">
-                    <b>⑥ NovelAI Cheatsheet</b>
+                    <b>⑥ Cheatsheet (NovelAI + GPT-Image)</b>
                     <div class="inline-drawer-icon fa-solid fa-circle-chevron-down down"></div>
                 </div>
                 <div class="inline-drawer-content">
-                    <small class="pxi-hint">สรุปสั้น ๆ จาก docs.novelai.net กดอ่าน คัดลอก หรือบันทึกเก็บไว้ได้</small>
+                    <small class="pxi-hint">สรุปสั้น ๆ จาก docs.novelai.net และ OpenAI Cookbook กดอ่าน คัดลอก หรือบันทึกเก็บไว้ได้</small>
                     <div id="pxi_docs_list" class="pxi-docs-list"></div>
                     <div class="menu_button menu_button_icon" id="pxi_docs_save_all"><i class="fa-solid fa-file-arrow-down"></i><span>บันทึกทั้งหมดเป็น .md</span></div>
                 </div>

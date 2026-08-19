@@ -72,6 +72,96 @@ const DEFAULT_TEMPLATES = {
     },
 };
 
+
+/* ================================================================== */
+/* GPT-Image templates (prompt แบบประโยคบรรยาย ไม่ใช่แท็ก)             */
+/* ================================================================== */
+
+const GPT_STYLE_PRESETS = {
+    realistic: {
+        label: 'Realistic / ภาพถ่ายจริง',
+        text: 'Style: photorealistic. Real human proportions and skin texture, natural lighting with believable shadows and depth of field, shot as if on a full-frame camera with a fast prime lens. No illustration or cartoon cues.',
+    },
+    semi_real: {
+        label: 'Semi-realistic / กึ่งสมจริง',
+        text: 'Style: semi-realistic illustration. Realistic proportions, anatomy and lighting, rendered as painted digital art with visible brushwork and slightly stylised faces. Between anime and photography, close to a modern game or light-novel cover painting.',
+    },
+    anime: {
+        label: 'Anime / อนิเมะ',
+        text: 'Style: modern anime illustration. Clean cel shading, crisp linework, expressive stylised eyes, saturated but controlled colour. A high-budget TV anime key visual, not a photograph.',
+    },
+    painterly: {
+        label: 'Painterly / ภาพวาดฝีแปรง',
+        text: 'Style: painterly digital illustration. Textured brushwork, expressive colour, soft edges and atmospheric light. Storybook or concept-art feel rather than photographic or flat anime.',
+    },
+    cinematic: {
+        label: 'Cinematic / ภาพนิ่งจากหนัง',
+        text: 'Style: cinematic film still. Anamorphic framing, motivated practical lighting, filmic colour grading with lifted shadows, subtle grain and shallow focus. Looks like a frame pulled from a feature film.',
+    },
+    watercolour: {
+        label: 'Watercolour / สีน้ำ',
+        text: 'Style: watercolour painting. Translucent washes, soft bleeding edges, visible paper texture, restrained palette with white space left to breathe.',
+    },
+    oil: {
+        label: 'Oil painting / สีน้ำมัน',
+        text: 'Style: oil painting on canvas. Thick impasto strokes, rich saturated pigment, warm classical lighting and visible canvas weave.',
+    },
+    render3d: {
+        label: '3D render / ภาพเรนเดอร์',
+        text: 'Style: polished 3D render. Stylised character modelling with soft global illumination, subsurface scattering on skin, clean materials and a shallow depth of field, in the manner of a modern animated feature.',
+    },
+    comic: {
+        label: 'Western comic / คอมิกฝั่งตะวันตก',
+        text: 'Style: western comic book art. Bold inked outlines, dynamic foreshortening, flat spot colour with halftone shading and dramatic high-contrast lighting.',
+    },
+    sketch: {
+        label: 'Sketch / ลายเส้นดินสอ',
+        text: 'Style: pencil sketch. Loose graphite linework, visible construction lines and hatching for shadow, minimal or no colour, on off-white paper.',
+    },
+    retro_anime: {
+        label: 'Retro anime / อนิเมะยุค 90',
+        text: 'Style: 1990s cel animation. Hand-painted cel look with slightly muted film-stock colour, heavier outlines, soft analogue grain and period character design.',
+    },
+    flat_vector: {
+        label: 'Flat vector / กราฟิกแบน',
+        text: 'Style: flat vector illustration. Clean geometric shapes, limited flat colour palette, no gradients or texture, generous negative space and confident silhouettes.',
+    },
+    storybook: {
+        label: 'Storybook / หนังสือนิทาน',
+        text: 'Style: children\'s storybook illustration. Warm gouache-like colour, gentle rounded shapes, cosy hand-made texture and soft even lighting.',
+    },
+    noir: {
+        label: 'Noir / ขาวดำคอนทราสต์สูง',
+        text: 'Style: black and white noir photography. High contrast monochrome, hard directional light carving deep shadows, visible film grain and a moody, restrained composition.',
+    },
+};
+
+/** ลำดับที่แสดงใน dropdown — เรียงตามที่ใช้บ่อยที่สุดก่อน */
+const GPT_STYLE_ORDER = ['realistic', 'semi_real', 'anime', 'painterly', 'cinematic', 'watercolour', 'oil', 'render3d', 'comic', 'sketch', 'retro_anime', 'flat_vector', 'storybook', 'noir'];
+
+const GPT_BASE_RULES = `Write ONE image prompt in natural English prose for an image model that reads plain descriptions.\nRules that always apply:\n- Write flowing sentences, not a comma-separated tag list. Do not use booru tags, weights like 1.2::tag::, or the source#/target#/mutual# syntax - this model understands none of them.\n- Order it like this: the subject or subjects, then their appearance and clothing, then expression and pose, then how they relate to each other, then the setting, then the lighting and mood, and finally the camera framing.\n- Describe named characters by their appearance instead of relying on the audience knowing them: hair colour and style, eye colour, build, clothing, and distinguishing features. You may name them and the work they come from once - \"Amiya from Arknights\" - as a reference, but the description must stand on its own without it.\n- Be concrete about placement: say who is on the left, who is on the right, who is nearer the camera, who is taller, and who is looking up or down. This model follows plain spatial language well, so use it instead of tags.\n- Say how many people are in the frame.\n- State the lighting and mood explicitly.\n- Do not ask for any text, lettering, captions, speech bubbles, watermarks or signatures in the image.\n- 80-160 words. No preamble, no headings, no quotes around the prompt - output the description only.`;
+
+const GPT_TEMPLATES = {
+    free: {
+        sys: `${GPT_BASE_RULES}\n\nRead the roleplay excerpt and describe the CURRENT scene as one image.\nCover every character the excerpt shows as present, what each of them looks like, what they are doing, and the place around them.`,
+    },
+    portrait: {
+        sys: `${GPT_BASE_RULES}\n\nDescribe a single-character portrait of the CHARACTER as they appear in the latest message.\nThe latest message decides the outfit, hair state, expression, pose and location; the character sheet supplies fixed traits it does not mention.\nChoose the tightest crop the moment needs - a head-and-shoulders portrait, a half-body shot, or a fuller view - and say which one you mean. If the lower body is not doing anything, crop it out.\nOnly this one character appears in the frame.`,
+    },
+    selfie: {
+        sys: `${GPT_BASE_RULES}\n\nDescribe a close-up of the CHARACTER's face, framed head to collarbone as if taken at arm's length right now.\nFocus on the face: hair framing it, eye colour, skin, blush, sweat or tears, and the exact expression and gaze from the current scene. Mention only the clothing visible at the neck and shoulders.\nDescribe the real place behind them, softly out of focus.\nOnly this one character appears in the frame.`,
+    },
+    user: {
+        sys: `${GPT_BASE_RULES}\n\nDescribe a single-character image of the USER's character.\nThe persona block gives their fixed traits: build, height, hair, eyes, permanent features. The latest message gives their current state: what they are wearing, how their hair sits, their expression, their pose and where they are. When the two disagree about something temporary, the scene wins.\nIf another character is touching them in the scene, keep only the effect on this character's own body and do not describe the second person.\nOnly this one character appears in the frame.`,
+    },
+    manga: {
+        sys: `${GPT_BASE_RULES}\n\nDescribe ONE comic page divided into separate panels, drawn in black and white with screentone shading.\nSay how many panels there are and how they are arranged - four equal panels stacked vertically is the most reliable choice. Then describe each panel in order as its own sentence or two: what the camera shows, who is in it, what they are doing, and their expression.\nVary the shot across panels rather than repeating the same distance.\nRe-describe each character in every panel they appear in, so they stay consistent.\nThe page contains no writing at all: no dialogue, no speech balloons, no sound effects.`,
+    },
+    last: {
+        sys: `${GPT_BASE_RULES}\n\nTurn the LATEST message into one image of that exact moment.\nInclude every character physically present in it, not only the ones given appearance blocks. Describe each one's look, then where they stand relative to each other, who is taller and who is looking up or down, and exactly what they are doing to one another.\nTake each character's final position in the message, not where they started.\nThen describe the setting, the time of day, the light and the mood.\nDraw only what this moment shows - no earlier events.`,
+    },
+};
+
 const MODES = Object.keys(DEFAULT_TEMPLATES);
 
 function defaultTemplate(mode) {
@@ -113,7 +203,7 @@ const defaultSettings = {
     // Context budget
     tag_hints: '',
     persona_mode: 'auto',
-    ctx_messages: 3,
+    ctx_messages: 0,
     ctx_chars: 1200,
     ctx_total: 10000,
     strip_html: true,
@@ -121,15 +211,35 @@ const defaultSettings = {
 
     // Connection 2
     c2_source: 'nai',
+    param_engine: 'nai',
+    tpl_engine: 'nai',
     nai_model: 'nai-diffusion-4-5-full',
+    nai_models_extra: [],
+    model_list_url: '',
+    model_list_auto: false,
     anlas_guard: true,
     img_url: '',
     img_key: '',
     img_model: '',
+    gpt_model: 'gpt-image-2',
+    gpt_size: '1024x1536',
+    gpt_quality: 'high',
+    gpt_output_format: 'png',
+    gpt_output_compression: 100,
+    gpt_background: 'auto',
+    gpt_moderation: 'auto',
+    gpt_style: 'realistic',
+    gpt_style_custom: '',
+    remember_style: false,
+    style_per_mode: false,
+    gpt_style_modes: {},
+    gpt_n: 1,
     img_url_mode: 'auto',
     img_gen_path: 'images/generations',
     img_models_path: 'models',
     img_models: [],
+    gpt_extra: '',
+    gpt_templates: {},
     img_format: 'b64_json',
     img_timeout: 180,
 
@@ -185,15 +295,32 @@ const BINDINGS = [
     ['pxi_strip_html', 'strip_html', 'bool'],
     ['pxi_strip_system', 'strip_system', 'bool'],
     ['pxi_c2_source', 'c2_source', 'text'],
+    ['pxi_param_engine', 'param_engine', 'text'],
+    ['pxi_tpl_engine', 'tpl_engine', 'text'],
     ['pxi_nai_model', 'nai_model', 'text'],
+    ['pxi_model_list_url', 'model_list_url', 'text'],
+    ['pxi_model_list_auto', 'model_list_auto', 'bool'],
     ['pxi_anlas_guard', 'anlas_guard', 'bool'],
     ['pxi_img_url', 'img_url', 'text'],
     ['pxi_img_key', 'img_key', 'text'],
+    ['pxi_gpt_model', 'gpt_model', 'text'],
+    ['pxi_gpt_size', 'gpt_size', 'text'],
+    ['pxi_gpt_quality', 'gpt_quality', 'text'],
+    ['pxi_gpt_output_format', 'gpt_output_format', 'text'],
+    ['pxi_gpt_output_compression', 'gpt_output_compression', 'number'],
+    ['pxi_gpt_background', 'gpt_background', 'text'],
+    ['pxi_gpt_moderation', 'gpt_moderation', 'text'],
+    ['pxi_gpt_style', 'gpt_style', 'text'],
+    ['pxi_gpt_style_custom', 'gpt_style_custom', 'text'],
+    ['pxi_remember_style', 'remember_style', 'bool'],
+    ['pxi_style_per_mode', 'style_per_mode', 'bool'],
+    ['pxi_gpt_n', 'gpt_n', 'number'],
     ['pxi_img_url_mode', 'img_url_mode', 'text'],
     ['pxi_img_gen_path', 'img_gen_path', 'text'],
     ['pxi_img_models_path', 'img_models_path', 'text'],
     ['pxi_img_model', 'img_model', 'text'],
     ['pxi_img_format', 'img_format', 'text'],
+    ['pxi_gpt_extra', 'gpt_extra', 'text'],
     ['pxi_img_timeout', 'img_timeout', 'number'],
     ['pxi_sampler', 'sampler', 'text'],
     ['pxi_scheduler', 'scheduler', 'text'],
@@ -242,7 +369,16 @@ function initSettings() {
     if (!Array.isArray(s.img_models)) s.img_models = [];
     if (!['auto', 'path', 'exact'].includes(s.img_url_mode)) s.img_url_mode = 'auto';
     if (!['auto', 'path', 'exact'].includes(s.llm_url_mode)) s.llm_url_mode = 'auto';
+    if (!s.gpt_templates || typeof s.gpt_templates !== 'object') s.gpt_templates = {};
+    if (!GPT_STYLE_PRESETS[s.gpt_style]) s.gpt_style = 'realistic';
+    if (s.c2_source === 'gptimage') { s.c2_source = 'custom'; s.param_engine = 'gpt'; s.tpl_engine = 'gpt'; }
+    if (!['nai', 'custom'].includes(s.c2_source)) s.c2_source = 'nai';
+    if (s.engine === 'gpt') { s.param_engine ??= 'gpt'; s.tpl_engine ??= 'gpt'; }
+    delete s.engine;
+    if (!['nai', 'gpt'].includes(s.param_engine)) s.param_engine = 'nai';
+    if (!['nai', 'gpt'].includes(s.tpl_engine)) s.tpl_engine = 'nai';
     if (!Array.isArray(s.llm_models)) s.llm_models = [];
+    if (!Array.isArray(s.nai_models_extra)) s.nai_models_extra = [];
     for (const mode of MODES) {
         if (!s.templates[mode] || typeof s.templates[mode] !== 'object') s.templates[mode] = defaultTemplate(mode);
         if (typeof s.templates[mode].sys !== 'string') s.templates[mode].sys = DEFAULT_TEMPLATES[mode].sys;
@@ -311,11 +447,16 @@ function hintsForStatus(stage, status, raw) {
     if (text.includes('content') && text.includes('filter')) out.push('โดนฟิลเตอร์เนื้อหาของ Connection 1 — ลดความโจ่งแจ้งของฉาก หรือเปลี่ยนโปรไฟล์/โมเดล');
     if (text.includes('warm') || text.includes('loading') || text.includes('cold')) out.push('โมเดลกำลังบ่ม (warming up) — รอ 30-60 วินาทีแล้วยิงใหม่');
     if (text.includes('quota') || text.includes('insufficient')) out.push('โควตา/เครดิตหมด');
+    if (/moderation|safety|content[_ ]policy|rejected|violat/i.test(text)) {
+        out.push('prompt โดนระบบกรองเนื้อหาของฝั่งเจนรูปตีกลับ — มักมาจากคำไม่กี่คำ ไม่ใช่ทั้งประโยค');
+        out.push('ลองแก้เฉพาะคำที่สุ่มเสี่ยง เช่นคำบรรยายร่างกาย เสื้อผ้าที่เปิดเผย หรือคำที่ตีความได้สองแง่ แล้วยิงใหม่');
+        if (paramsAreGpt()) out.push('ถ้าใช้ GPT-Image ลองตั้ง Moderation เป็น low ในหมวด ⑤ เพื่อให้กรองหลวมลง');
+    }
     if (!out.length) out.push('ลองกดปุ่มทดสอบการเชื่อมต่อในหน้าตั้งค่า เพื่อแยกว่าเป็นที่การเชื่อมต่อหรือที่ prompt');
     return out;
 }
 
-async function showErrorPopup(error) {
+async function showErrorPopup(error, { retry = false } = {}) {
     const context = getContext();
     const stage = error?.stage === '1' ? '① Connection 1 (สร้าง prompt)'
         : error?.stage === '2' ? '② Connection 2 (เจนรูป)'
@@ -360,7 +501,10 @@ async function showErrorPopup(error) {
     }
 
     try {
-        await context.callGenericPopup(root, context.POPUP_TYPE.TEXT, '', { wide: true, okButton: 'ปิด' });
+        await context.callGenericPopup(root, context.POPUP_TYPE.TEXT, '', {
+            wide: true,
+            okButton: retry ? 'แก้ prompt แล้วลองใหม่' : 'ปิด',
+        });
     } catch {
         notify(String(error?.message || error), 'error');
     }
@@ -682,7 +826,8 @@ async function buildStage1Messages(mode = 'free', extra = '') {
     const context = getContext();
     const s = settings();
     const macros = await buildMacros(extra);
-    const template = s.templates[mode] || s.templates.free;
+    const useGpt = targetIsGpt();
+    const template = useGpt ? gptTemplate(mode) : (s.templates[mode] || s.templates.free);
 
     const substitute = (text) => {
         try {
@@ -707,6 +852,7 @@ async function buildStage1Messages(mode = 'free', extra = '') {
 
     const messages = [];
     let system = substitute(template.sys).trim();
+    if (useGpt) system = `${system}\n\n${gptStyleText(mode)}`;
     if (settings().llm_can_search) system = `${system}\n\n${SEARCH_RULE}`;
     if (settings().cot_mode === 'light') system = `${system}\n\n${PLANNING_RULE}`;
     if (system) messages.push({ role: 'system', content: system });
@@ -900,7 +1046,7 @@ async function stage1GeneratePrompt(mode, extra) {
         const planning = String(result.text || '').match(/<planning>([\s\S]*?)<\/planning>/i);
         if (planning) { lastAnalysis = planning[1].trim(); console.log(LOG, 'planning', lastAnalysis); }
     }
-    const prompt = normalizePrompt(result.text);
+    const prompt = targetIsGpt() ? normaliseProse(result.text) : normalizePrompt(result.text);
     assertUsablePrompt(prompt, result.raw, result.finish);
     return prompt;
 }
@@ -926,8 +1072,62 @@ async function editPrompt(prompt, title = 'แก้ไข prompt ก่อน�
 /* Stage 2                                                             */
 /* ================================================================== */
 
+/** ชุด template ที่กำลังใช้/กำลังแก้ (หมวด ②) — อิสระจากชุดพารามิเตอร์ */
+function targetIsGpt() {
+    return settings().tpl_engine === 'gpt';
+}
+
+/** ชุดพารามิเตอร์ที่จะถูกส่งไป Connection 2 (หมวด ⑤) — อิสระจากชุด template */
+function paramsAreGpt() {
+    return settings().param_engine === 'gpt';
+}
+
+function gptTemplate(mode) {
+    const saved = settings().gpt_templates || {};
+    const entry = saved[mode];
+    if (entry && typeof entry.sys === 'string') return entry;
+    return GPT_TEMPLATES[mode] || GPT_TEMPLATES.free;
+}
+
+/** สไตล์ที่ใช้จริงของรอบนี้ (override ชั่วคราวจาก popup มาก่อน) */
+let runStyleOverride = '';
+
+function styleKeyFor(mode) {
+    const s = settings();
+    if (s.style_per_mode && s.gpt_style_modes?.[mode]) return s.gpt_style_modes[mode];
+    return s.gpt_style;
+}
+
+function gptStyleText(mode = '') {
+    const s = settings();
+    const key = runStyleOverride || styleKeyFor(mode);
+    if (key === 'custom') {
+        const custom = String(s.gpt_style_custom || '').trim();
+        if (custom) return custom.toLowerCase().startsWith('style:') ? custom : `Style: ${custom}`;
+    }
+    return (GPT_STYLE_PRESETS[key] || GPT_STYLE_PRESETS.realistic).text;
+}
+
+/** GPT-Image รับ prompt เป็นข้อความบรรยาย จึงห้ามยุบบรรทัดเป็นคอมมาแบบฝั่งแท็ก */
+function normaliseProse(text) {
+    let out = String(text || '').trim();
+    out = out.replace(/^```[a-z]*\s*|\s*```$/gi, '');
+    out = out.replace(/<(think|thinking|reasoning|planning|plan|analysis)[\s\S]*?<\/\1>/gi, '');
+    out = out.replace(/^[\s\S]*<\/(?:think|thinking|reasoning|planning|plan|analysis)>/i, '');
+    out = out.replace(/^\s*(prompt|image prompt|output|description)\s*[:：]\s*/i, '');
+    out = out.replace(/\n\s*(sources?|references?|citations?|แหล่งที่มา|อ้างอิง)\s*[:：]?[\s\S]*$/i, '');
+    out = out.replace(/\[\^?\d+\](?:\([^)]*\))?/g, '');
+    out = out.replace(/\u3010[^\u3011]{0,80}\u3011/g, '');
+    out = out.replace(/\[([^\]]+)\]\((?:https?:|\/)[^)]*\)/g, '$1');
+    out = out.replace(/\bhttps?:\/\/\S+/gi, '');
+    out = out.replace(/^["'“”]+|["'“”]+$/g, '');
+    return out.replace(/[ \t]{2,}/g, ' ').replace(/\n{3,}/g, '\n\n').trim();
+}
+
 function composePrompt(prompt) {
     const s = settings();
+    // prefix/suffix เป็นแท็กคุณภาพของ NovelAI ไม่มีความหมายกับ GPT-Image
+    if (paramsAreGpt()) return String(prompt || '').trim();
     return [s.prefix, prompt, s.suffix].map(p => String(p || '').trim()).filter(Boolean).join(', ');
 }
 
@@ -1058,6 +1258,70 @@ async function stage2NovelAI(prompt) {
     return { kind: 'base64', value: clean };
 }
 
+const GPT_MODELS = [
+    ['gpt-image-1', 'gpt-image-1'],
+    ['gpt-image-1-mini', 'gpt-image-1-mini'],
+    ['gpt-image-1.5', 'gpt-image-1.5'],
+    ['gpt-image-2', 'gpt-image-2 (ขนาดอิสระ)'],
+    ['gpt-image-2-2026-04-21', 'gpt-image-2-2026-04-21'],
+    ['chatgpt-image-latest', 'chatgpt-image-latest'],
+];
+
+const GPT_SIZE_PRESETS = [
+    ['auto', 'auto (ให้โมเดลเลือกเอง)'],
+    ['1024x1536', '1024 x 1536  (2:3 แนวตั้ง)'],
+    ['1536x1024', '1536 x 1024  (3:2 แนวนอน)'],
+    ['1024x1024', '1024 x 1024  (1:1 จัตุรัส)'],
+    ['1152x1536', '1152 x 1536  (3:4 แนวตั้ง) — gpt-image-2'],
+    ['1536x1152', '1536 x 1152  (4:3 แนวนอน) — gpt-image-2'],
+    ['1088x1920', '1088 x 1920  (9:16 แนวตั้ง) — gpt-image-2'],
+    ['1920x1088', '1920 x 1088  (16:9 แนวนอน) — gpt-image-2'],
+    ['2560x1440', '2560 x 1440  (16:9 ใหญ่) — gpt-image-2'],
+    ['1440x2560', '1440 x 2560  (9:16 ใหญ่) — gpt-image-2'],
+];
+
+/** ส่งขนาดตามที่ผู้ใช้กรอกตรง ๆ ไม่ดัดค่า ไม่ล็อกสเปก */
+function resolveGptSize() {
+    const raw = String(settings().gpt_size || 'auto').trim().replace(/\s+/g, '').toLowerCase();
+    if (!raw || raw === 'auto') return { size: 'auto', warnings: [] };
+    const match = raw.match(/^(\d{2,5})[x×*](\d{2,5})$/);
+    if (!match) return { size: 'auto', warnings: [`ขนาด "${settings().gpt_size}" อ่านไม่ออก จะส่ง auto แทน`] };
+    return { size: `${match[1]}x${match[2]}`, warnings: [] };
+}
+
+async function stage2GptImage(prompt) {
+    const s = settings();
+    const url = resolveImageUrl('generate');
+    const { size, warnings } = resolveGptSize();
+    for (const warning of warnings) console.warn(LOG, 'GPT-Image:', warning);
+
+    const format = ['png', 'jpeg', 'webp'].includes(s.gpt_output_format) ? s.gpt_output_format : 'png';
+    const body = {
+        model: s.gpt_model || 'gpt-image-2',
+        prompt: composePrompt(prompt).slice(0, 32000),
+        size,
+        output_format: format,
+    };
+
+    if (['low', 'medium', 'high', 'auto'].includes(s.gpt_quality)) body.quality = s.gpt_quality;
+    body.n = Math.min(10, Math.max(1, Number(s.gpt_n) || 1));
+    if (format !== 'png') {
+        const compression = Number(s.gpt_output_compression);
+        if (Number.isFinite(compression)) body.output_compression = Math.min(100, Math.max(0, compression));
+    }
+    if (s.gpt_background && s.gpt_background !== 'auto') body.background = s.gpt_background;
+    if (s.gpt_moderation === 'low') body.moderation = 'low';
+    Object.assign(body, parseExtraBody());
+
+    console.log(LOG, 'GPT-Image payload', { ...body, prompt: body.prompt.slice(0, 120) + '…' });
+    const data = await requestJson(url, {
+        method: 'POST',
+        headers: authHeaders(s.img_key),
+        body: JSON.stringify(body),
+    }, s.img_timeout, '2');
+    return extractImage(data);
+}
+
 async function stage2Custom(prompt) {
     const s = settings();
     const url = resolveImageUrl('generate');
@@ -1091,7 +1355,40 @@ async function stage2Custom(prompt) {
 }
 
 async function stage2GenerateImage(prompt) {
-    return settings().c2_source === 'nai' ? await stage2NovelAI(prompt) : await stage2Custom(prompt);
+    if (settings().c2_source === 'nai') return await stage2NovelAI(prompt);
+    return paramsAreGpt() ? await stage2GptImage(prompt) : await stage2Custom(prompt);
+}
+
+/**
+ * ยิงเจนรูป ถ้าพลาด (โดยเฉพาะโดนฟิลเตอร์) จะเด้ง popup ให้แก้ prompt แล้วลองใหม่
+ * กดยกเลิกใน popup แก้ prompt เมื่อไหร่ถึงจะเลิก
+ */
+const MAX_GENERATE_ATTEMPTS = 5;
+
+async function generateWithRetry(prompt, { quiet = false } = {}) {
+    let current = String(prompt || '').trim();
+    for (let attempt = 1; attempt <= MAX_GENERATE_ATTEMPTS; attempt++) {
+        try {
+            setStatus(attempt === 1 ? '② กำลังเจนรูป...' : `② กำลังเจนรูป (ครั้งที่ ${attempt})...`);
+            if (!quiet && attempt === 1) notify('กำลังเจนรูป (Connection 2)...');
+            const image = await stage2GenerateImage(current);
+            return { image, prompt: current };
+        } catch (error) {
+            console.error(LOG, error);
+            setStatus(String(error?.message || error), true);
+            const last = attempt >= MAX_GENERATE_ATTEMPTS;
+            await showErrorPopup(error, { retry: !last });
+            if (last) {
+                notify(`ลองแล้ว ${MAX_GENERATE_ATTEMPTS} ครั้งยังไม่ผ่าน หยุดไว้ก่อน`, 'warning');
+                setStatus(`หยุดหลังลอง ${MAX_GENERATE_ATTEMPTS} ครั้ง — ลองแก้การตั้งค่าแล้วเริ่มใหม่`, true);
+                return null;
+            }
+            const edited = await editPrompt(current, `เจนไม่ผ่าน — แก้ prompt แล้วลองใหม่ (ครั้งที่ ${attempt + 1} จาก ${MAX_GENERATE_ATTEMPTS})`);
+            if (!edited) { setStatus('ยกเลิกแล้ว'); return null; }
+            current = edited;
+        }
+    }
+    return null;
 }
 
 async function uploadBase64(base64) {
@@ -1163,6 +1460,69 @@ function mergeExtra(extra) {
         .filter(Boolean).join('\n');
 }
 
+/** ถามสไตล์ก่อนเจน เมื่อใช้ชุดพารามิเตอร์ GPT-Image และยังไม่ได้สั่งให้จำ */
+async function askStyle(mode) {
+    const context = getContext();
+    const s = settings();
+
+    const root = document.createElement('div');
+    root.className = 'pxi-stylebox';
+
+    const title = document.createElement('h3');
+    title.textContent = 'เลือกสไตล์ภาพ';
+    const hint = document.createElement('div');
+    hint.className = 'pxi-hint';
+    hint.textContent = `โหมด ${DEFAULT_TEMPLATES[mode]?.label || mode} • สไตล์จะถูกส่งไปให้ Connection 1 เขียน prompt`;
+
+    const select = document.createElement('select');
+    select.className = 'text_pole';
+    for (const key of GPT_STYLE_ORDER) {
+        const preset = GPT_STYLE_PRESETS[key];
+        if (!preset) continue;
+        const option = document.createElement('option');
+        option.value = key;
+        option.textContent = preset.label;
+        select.append(option);
+    }
+    if (String(s.gpt_style_custom || '').trim()) {
+        const option = document.createElement('option');
+        option.value = 'custom';
+        option.textContent = 'กำหนดเอง (ตามที่เขียนไว้ในหมวด ②)';
+        select.append(option);
+    }
+    select.value = styleKeyFor(mode);
+
+    const rememberLabel = document.createElement('label');
+    rememberLabel.className = 'checkbox_label';
+    const remember = document.createElement('input');
+    remember.type = 'checkbox';
+    const rememberText = document.createElement('span');
+    rememberText.textContent = 'จำสไตล์นี้ไว้ ไม่ต้องถามอีก (ยกเลิกได้ที่หมวด ⑤)';
+    rememberLabel.append(remember, rememberText);
+
+    root.append(title, hint, select, rememberLabel);
+
+    const ok = await context.callGenericPopup(root, context.POPUP_TYPE.CONFIRM, '', {
+        okButton: 'สร้างภาพ',
+        cancelButton: 'ยกเลิก',
+    });
+    if (!ok) return null;
+
+    const chosen = select.value;
+    if (remember.checked) {
+        s.remember_style = true;
+        if (s.style_per_mode) {
+            if (!s.gpt_style_modes || typeof s.gpt_style_modes !== 'object') s.gpt_style_modes = {};
+            s.gpt_style_modes[mode] = chosen;
+        } else {
+            s.gpt_style = chosen;
+        }
+        loadSettingsToUi();
+        context.saveSettingsDebounced();
+    }
+    return chosen;
+}
+
 async function runPipeline({ mode = 'free', rawPrompt = '', extra = '', quiet = false } = {}) {
     const s = settings();
     if (!s.enabled) { notify('Extension ถูกปิดอยู่', 'warning'); return null; }
@@ -1172,6 +1532,13 @@ async function runPipeline({ mode = 'free', rawPrompt = '', extra = '', quiet = 
         let prompt = String(rawPrompt || '').trim();
         const fromStage1 = !prompt;
         lastAnalysis = '';
+        runStyleOverride = '';
+
+        if (fromStage1 && paramsAreGpt() && !s.remember_style) {
+            const chosen = await askStyle(mode);
+            if (!chosen) { setStatus('ยกเลิกแล้ว'); return null; }
+            runStyleOverride = chosen;
+        }
 
         if (fromStage1) {
             setStatus(`① กำลังสร้าง prompt (${mode})...`);
@@ -1189,11 +1556,10 @@ async function runPipeline({ mode = 'free', rawPrompt = '', extra = '', quiet = 
             prompt = edited;
         }
 
-        setStatus('② กำลังเจนรูป...');
-        if (!quiet) notify('กำลังเจนรูป (Connection 2)...');
-        const image = await stage2GenerateImage(prompt);
-        const path = image.kind === 'base64' ? await uploadBase64(image.value) : image.value;
-        await postImageMessage(path, prompt, mode);
+        const result = await generateWithRetry(prompt, { quiet });
+        if (!result) return null;
+        const path = result.image.kind === 'base64' ? await uploadBase64(result.image.value) : result.image.value;
+        await postImageMessage(path, result.prompt, mode);
         setStatus('เสร็จสิ้น');
         return path;
     } catch (error) {
@@ -1203,6 +1569,7 @@ async function runPipeline({ mode = 'free', rawPrompt = '', extra = '', quiet = 
         return null;
     } finally {
         isBusy = false;
+        runStyleOverride = '';
     }
 }
 
@@ -1280,13 +1647,13 @@ async function onImageSwiped({ message, direction }) {
 
     isBusy = true;
     try {
-        setStatus('② กำลังเจนใบใหม่...');
         notify('กำลังเจนรูปใบใหม่...');
-        const image = await stage2GenerateImage(edited);
-        const path = image.kind === 'base64' ? await uploadBase64(image.value) : image.value;
-        media.push({ url: path, type: 'image', title: edited, source: 'generated', generation_type: 'proxy_image_gen' });
+        const result = await generateWithRetry(edited, { quiet: true });
+        if (!result) return;
+        const path = result.image.kind === 'base64' ? await uploadBase64(result.image.value) : result.image.value;
+        media.push({ url: path, type: 'image', title: result.prompt, source: 'generated', generation_type: 'proxy_image_gen' });
         message.extra.media_index = media.length - 1;
-        message.extra.pxi.prompt = edited;
+        message.extra.pxi.prompt = result.prompt;
         try { await getContext().saveChat(); } catch { /* ignore */ }
         setStatus('เสร็จสิ้น');
     } catch (error) {
@@ -1324,6 +1691,16 @@ async function saveNovelKey() {
 }
 
 /** ชุดค่าที่ NovelAI แนะนำสำหรับโมเดลที่เลือกอยู่ */
+/** รายชื่อโมเดล NovelAI ที่มากับตัว extension — ผู้ใช้พิมพ์ชื่ออื่นเองได้เสมอ */
+const NAI_MODELS_BUILTIN = [
+    { id: 'nai-diffusion-4-5-full', label: 'NAI Diffusion Anime V4.5 (Full)' },
+    { id: 'nai-diffusion-4-5-curated', label: 'NAI Diffusion Anime V4.5 (Curated)' },
+    { id: 'nai-diffusion-4-full', label: 'NAI Diffusion Anime V4 (Full)' },
+    { id: 'nai-diffusion-4-curated-preview', label: 'NAI Diffusion Anime V4 (Curated)' },
+    { id: 'nai-diffusion-3', label: 'NAI Diffusion Anime V3' },
+    { id: 'nai-diffusion-furry-3', label: 'NAI Diffusion Furry V3' },
+];
+
 const NAI_QUALITY_SUFFIX = {
     'nai-diffusion-4-5-full': 'location, very aesthetic, masterpiece, no text',
     'nai-diffusion-4-5-curated': 'location, masterpiece, no text, -0.8::feet::, rating:general',
@@ -1332,6 +1709,8 @@ const NAI_QUALITY_SUFFIX = {
     'nai-diffusion-3': 'best quality, amazing quality, very aesthetic, absurdres',
     'nai-diffusion-furry-3': '{best quality}, {amazing quality}',
 };
+
+const NAI_REMOTE_NEGATIVE = {};
 
 const NAI_NEGATIVE = {
     curated: 'blurry, lowres, upscaled, artistic error, film grain, scan artifacts, bad anatomy, bad hands, worst quality, bad quality, jpeg artifacts, very displeasing, chromatic aberration, halftone, multiple views, logo, too many watermarks, @_@, mismatched pupils, glowing eyes, negative space, blank page',
@@ -1349,7 +1728,8 @@ function applyRecommended() {
     // ขนาดภาพเป็นค่าเดียวที่ไม่แตะ ตามที่ผู้ใช้ตั้งไว้เอง
     s.prefix = '';
     s.suffix = NAI_QUALITY_SUFFIX[model] || NAI_QUALITY_SUFFIX['nai-diffusion-4-5-full'];
-    s.negative = isV3 ? NAI_NEGATIVE.v3 : (isCurated ? NAI_NEGATIVE.curated : NAI_NEGATIVE.full);
+    s.negative = NAI_REMOTE_NEGATIVE[model]
+        || (isV3 ? NAI_NEGATIVE.v3 : (isCurated ? NAI_NEGATIVE.curated : NAI_NEGATIVE.full));
     s.sampler = 'k_euler_ancestral';
     s.scheduler = 'karras';
     s.steps = 28;
@@ -1636,10 +2016,12 @@ async function testConnection(kind) {
                 const prompt = '1girl, solo, upper body, looking at viewer, simple background';
                 setStatus('กำลังทดสอบเจนรูป 1 ใบ...');
                 setC2State('กำลังทดสอบเจนรูป 1 ใบ...');
-                const image = await stage2GenerateImage(prompt);
+                const result = await generateWithRetry(prompt, { quiet: true });
+                if (!result) { setC2State('ยกเลิกการทดสอบ'); return; }
+                const image = result.image;
                 const path = image.kind === 'base64' ? await uploadBase64(image.value) : image.value;
                 const size = image.kind === 'base64' ? `${Math.round(image.value.length / 1024)} KB` : 'URL รูป';
-                await postImageMessage(path, prompt, 'test');
+                await postImageMessage(path, result.prompt, 'test');
                 notify(`Connection 2 เจนรูปได้ (${size}) — ส่งเข้าแชทแล้ว`, 'success');
                 setStatus('Connection 2 ✓ เจนรูปทดสอบสำเร็จ ส่งเข้าแชทแล้ว');
                 setC2State(`ทดสอบเจนรูปสำเร็จ (${size}) — รูปอยู่ท้ายแชท`, 'ok');
@@ -1759,8 +2141,14 @@ function toggleSourceBlocks() {
     document.querySelectorAll('.pxi-c1-custom').forEach(el => el.classList.toggle('pxi-hidden', s.c1_source !== 'custom'));
     if (s.c1_source === 'custom') updateLlmUrlModeUi();
     document.querySelectorAll('.pxi-c2-nai').forEach(el => el.classList.toggle('pxi-hidden', s.c2_source !== 'nai'));
-    document.querySelectorAll('.pxi-c2-custom').forEach(el => el.classList.toggle('pxi-hidden', s.c2_source !== 'custom'));
-    if (s.c2_source === 'custom') updateUrlModeUi();
+    // GPT-Image ใช้ URL/key/timeout ชุดเดียวกับ Custom
+    const usesCustomEndpoint = s.c2_source === 'custom';
+    document.querySelectorAll('.pxi-c2-custom').forEach(el => el.classList.toggle('pxi-hidden', !usesCustomEndpoint));
+    const gptParams = s.param_engine === 'gpt';
+    document.querySelectorAll('.pxi-p-gpt').forEach(el => el.classList.toggle('pxi-hidden', !gptParams));
+    document.querySelectorAll('.pxi-p-diffusion').forEach(el => el.classList.toggle('pxi-hidden', gptParams));
+    document.querySelectorAll('.pxi-style-custom').forEach(el => el.classList.toggle('pxi-hidden', s.gpt_style !== 'custom'));
+    if (usesCustomEndpoint) updateUrlModeUi();
 }
 
 async function populateProfiles() {
@@ -1799,25 +2187,141 @@ async function populateProfiles() {
 function loadTemplateEditor() {
     const mode = document.getElementById('pxi_tpl_mode')?.value || 'free';
     const sys = document.getElementById('pxi_tpl_sys');
-    if (sys) sys.value = (settings().templates[mode] || settings().templates.free).sys;
-    document.getElementById('pxi_manga_note')?.classList.toggle('pxi-hidden', mode !== 'manga');
+    const useGpt = targetIsGpt();
+    if (sys) {
+        sys.value = useGpt
+            ? gptTemplate(mode).sys
+            : (settings().templates[mode] || settings().templates.free).sys;
+    }
+    const badge = document.getElementById('pxi_tpl_set');
+    if (badge) {
+        badge.textContent = useGpt
+            ? 'กำลังแก้ชุด GPT-Image (prompt แบบประโยคบรรยาย) — เก็บแยกจากชุด NovelAI ที่แก้ไว้ ไม่ทับกัน'
+            : 'กำลังแก้ชุด NovelAI / Diffusion (prompt แบบแท็ก) — เก็บแยกจากชุด GPT-Image ที่แก้ไว้ ไม่ทับกัน';
+    }
+    document.getElementById('pxi_manga_note')?.classList.toggle('pxi-hidden', mode !== 'manga' || useGpt);
 }
 
 function saveTemplateEditor() {
     const context = getContext();
+    const s = settings();
     const mode = document.getElementById('pxi_tpl_mode')?.value || 'free';
     const sys = document.getElementById('pxi_tpl_sys');
-    if (sys && settings().templates[mode]) settings().templates[mode].sys = sys.value;
+    if (!sys) return;
+    if (targetIsGpt()) {
+        if (!s.gpt_templates || typeof s.gpt_templates !== 'object') s.gpt_templates = {};
+        s.gpt_templates[mode] = { sys: sys.value };
+    } else if (s.templates[mode]) {
+        s.templates[mode].sys = sys.value;
+    }
     context.saveSettingsDebounced();
 }
 
 function resetTemplate(all = false) {
     const context = getContext();
     const modes = all ? MODES : [document.getElementById('pxi_tpl_mode')?.value || 'free'];
-    for (const mode of modes) settings().templates[mode] = defaultTemplate(mode);
+    for (const mode of modes) {
+        if (targetIsGpt()) delete (settings().gpt_templates || {})[mode];
+        else settings().templates[mode] = defaultTemplate(mode);
+    }
     loadTemplateEditor();
     context.saveSettingsDebounced();
     notify(all ? 'รีเซ็ตทุก template กลับค่าเริ่มต้นแล้ว' : 'รีเซ็ต template นี้แล้ว', 'success');
+}
+
+/** รวมรายชื่อ built-in + ที่ดึงมาจาก remote + ที่ผู้ใช้พิมพ์เอง */
+function naiModelList() {
+    const s = settings();
+    const seen = new Set();
+    const out = [];
+    for (const item of [...NAI_MODELS_BUILTIN, ...(s.nai_models_extra || [])]) {
+        const id = typeof item === 'string' ? item : item?.id;
+        if (!id || seen.has(id)) continue;
+        seen.add(id);
+        out.push({ id, label: (typeof item === 'object' && item.label) || id });
+    }
+    if (s.nai_model && !seen.has(s.nai_model)) out.push({ id: s.nai_model, label: s.nai_model + ' (พิมพ์เอง)' });
+    return out;
+}
+
+function populateNaiModels() {
+    const list = document.getElementById('pxi_nai_model_list');
+    if (!list) return;
+    list.innerHTML = '';
+    for (const model of naiModelList()) {
+        const option = document.createElement('option');
+        option.value = model.id;
+        option.label = model.label;
+        option.textContent = model.label;
+        list.append(option);
+    }
+}
+
+/**
+ * ดึงรายชื่อโมเดลจาก URL ภายนอก (เช่นไฟล์ JSON บน GitHub ของผู้ใช้เอง)
+ * รองรับทั้ง ["id", ...] และ [{ id, label, suffix, negative }, ...]
+ */
+async function fetchRemoteModelList({ silent = false } = {}) {
+    const context = getContext();
+    const s = settings();
+    const url = String(s.model_list_url || '').trim();
+    if (!url) {
+        if (!silent) notify('ยังไม่ได้ใส่ URL ของรายชื่อโมเดล', 'warning');
+        return false;
+    }
+    try {
+        assertReachableScheme(url, '2');
+        const data = await requestJson(url, { method: 'GET' }, 20, '2');
+        const raw = Array.isArray(data) ? data : (Array.isArray(data?.models) ? data.models : []);
+        const parsed = [];
+        for (const item of raw) {
+            if (typeof item === 'string') { parsed.push({ id: item }); continue; }
+            if (!item?.id) continue;
+            const entry = { id: String(item.id) };
+            if (item.label) entry.label = String(item.label);
+            if (item.suffix) entry.suffix = String(item.suffix);
+            if (item.negative) entry.negative = String(item.negative);
+            parsed.push(entry);
+        }
+        if (!parsed.length) throw new PxiError('ไฟล์นี้ไม่มีรายชื่อโมเดลที่อ่านได้', { stage: '2' });
+
+        s.nai_models_extra = parsed;
+        for (const entry of parsed) {
+            if (entry.suffix) NAI_QUALITY_SUFFIX[entry.id] = entry.suffix;
+            if (entry.negative) NAI_REMOTE_NEGATIVE[entry.id] = entry.negative;
+        }
+        populateNaiModels();
+        context.saveSettingsDebounced();
+        if (!silent) notify(`อัปเดตรายชื่อโมเดลแล้ว (${parsed.length} รายการ)`, 'success');
+        setStatus(`รายชื่อโมเดล NovelAI: ${parsed.length} รายการจาก remote list`);
+        return true;
+    } catch (error) {
+        console.warn(LOG, 'ดึงรายชื่อโมเดลไม่สำเร็จ', error);
+        if (!silent) await showErrorPopup(error);
+        return false;
+    }
+}
+
+function populateGptStyles() {
+    const select = document.getElementById('pxi_gpt_style');
+    if (!select || select.dataset?.filled === '1') return;
+    select.innerHTML = '';
+    for (const key of GPT_STYLE_ORDER) {
+        const preset = GPT_STYLE_PRESETS[key];
+        if (!preset) continue;
+        const option = document.createElement('option');
+        option.value = key;
+        option.textContent = preset.label;
+        select.append(option);
+    }
+    const customOption = document.createElement('option');
+    customOption.value = 'custom';
+    customOption.textContent = 'กำหนดเอง (เขียนข้อความสไตล์เอง)';
+    select.append(customOption);
+    if (select.dataset) select.dataset.filled = '1';
+    const current = GPT_STYLE_PRESETS[settings().gpt_style] ? settings().gpt_style : 'realistic';
+    settings().gpt_style = current;
+    select.value = current;
 }
 
 function populateSizePresets() {
@@ -1880,6 +2384,21 @@ function updateUrlModeUi() {
     } catch (error) {
         hint.textContent = String(error?.message || error);
         hint.classList.add('pxi-warn');
+    }
+}
+
+function updateGptSizeHint() {
+    const el = document.getElementById('pxi_gpt_size_hint');
+    if (!el) return;
+    try {
+        const { size, warnings } = resolveGptSize();
+        el.textContent = warnings.length
+            ? `จะส่ง size: ${size}\n• ${warnings.join('\n• ')}`
+            : `จะส่ง size: ${size}`;
+        el.classList.toggle('pxi-warn', warnings.length > 0);
+    } catch (error) {
+        el.textContent = String(error?.message || error);
+        el.classList.add('pxi-warn');
     }
 }
 
@@ -1979,18 +2498,18 @@ function updateContextHints() {
     if (perMessage > 1200) warnings.push(`ตัด/ข้อความ ${perMessage} สูงมาก — ข้อความล่าสุดกินไป ${lastCap} ตัวอักษร เสี่ยง Connection 1 ตอบช้าหรือไม่ยอมตอบ แนะนำไม่เกิน 1200`);
     if (total < 1000) warnings.push('เพดานรวมต่ำกว่า 1000 — ฉากก่อนหน้าจะหายเกือบหมด แนะนำอย่างน้อย 1000');
     if (total > 10000) warnings.push('เพดานรวมเกิน 10000 — เกินความจำเป็นและเสี่ยงชน context limit ของโปรไฟล์ แนะนำไม่เกิน 10000');
-    if (messages === 0) warnings.push('ข้อความล่าสุด = 0 จะไม่ส่งบทสนทนาไปเลย โหมด Last Message จะเหลือแค่ข้อความเดียว');
-    if (messages > 8) warnings.push(`ข้อความล่าสุด ${messages} เยอะเกินจำเป็น — โหมดเจนรูปใช้แค่ฉากปัจจุบัน แนะนำ 2-4`);
-    if (messages === 1) warnings.push('ข้อความล่าสุด = 1 จะส่งข้อความเดียวกันซ้ำสองรอบ (ทั้งใน chat และ lastMessage) — ใช้ 0 ถ้าไม่ต้องการบริบท หรือ 2-4 ถ้าต้องการ');
+    if (messages === 1) warnings.push('ข้อความล่าสุด = 1 จะส่งข้อความเดียวกันซ้ำสองรอบ (ทั้งใน chat และ lastMessage) — ใช้ 0 แทน');
+    if (messages > 4) warnings.push(`ข้อความล่าสุด ${messages} ย้อนไปไกลเกินจำเป็น — เสี่ยงหยิบเนื้อหาเก่าที่ไม่เกี่ยวกับฉากปัจจุบัน และเพิ่มโอกาสติดฟิลเตอร์ของ Connection 1 แนะนำ 0`);
     const answerBudget = Number(s.llm_max_tokens) || 600;
     if (answerBudget < 400) warnings.push(`เพดานความยาวคำตอบ ${answerBudget} ต่ำไป — prompt ที่มีหลายตัวละครจะถูกตัดกลางคัน แนะนำ 600 ขึ้นไป`);
     if (s.cot_mode === 'heavy' && answerBudget < 600) warnings.push('โหมด CoT หนักต้องการที่ให้รอบวิเคราะห์ด้วย — ตั้งเพดานความยาวคำตอบอย่างน้อย 600');
 
     el.textContent = '';
     const summary = document.createElement('div');
+    const scopeNote = messages === 0 ? ' • อ่านเฉพาะข้อความล่าสุดข้อความเดียว' : '';
     const cotNote = s.cot_mode === 'heavy' ? ' • CoT หนัก = ยิง 2 รอบ'
         : s.cot_mode === 'light' ? ' • CoT เบา = เผื่อคำตอบ 1.8 เท่า' : '';
-    summary.textContent = `งบจริง ≈ ${budget} ตัวอักษรจากบทสนทนา + ข้อความล่าสุดสูงสุด ${lastCap} ตัวอักษร รวมกับ template แล้วราว ${tokens} tokens${cotNote}`;
+    summary.textContent = `งบจริง ≈ ${budget} ตัวอักษรจากบทสนทนา + ข้อความล่าสุดสูงสุด ${lastCap} ตัวอักษร รวมกับ template แล้วราว ${tokens} tokens${scopeNote}${cotNote}`;
     el.append(summary);
     for (const warning of warnings) {
         const line = document.createElement('div');
@@ -2012,8 +2531,11 @@ function loadSettingsToUi() {
     loadTemplateEditor();
     toggleSourceBlocks();
     populateSizePresets();
+    populateNaiModels();
+    populateGptStyles();
     populateImageModels();
     populateLlmModels();
+    updateGptSizeHint();
     updateUrlModeUi();
     updateLlmUrlModeUi();
     resolveOverswipeConflict({ silent: true });
@@ -2041,6 +2563,8 @@ function bindEvents() {
             else s[key] = el.value;
             if (key === 'wand_button') updateWandButton();
             if (key === 'c1_source' || key === 'c2_source') toggleSourceBlocks();
+            if (key === 'c2_source') loadTemplateEditor();
+            if (key === 'gpt_size' || key === 'gpt_model') updateGptSizeHint();
             if (key.startsWith('ctx_') || key === 'llm_max_tokens' || key === 'cot_mode') updateContextHints();
             if (key === 'persona_mode') updatePersonaHint();
             if (key === 'size' || key === 'steps' || key === 'anlas_guard') updateSizeUi();
@@ -2056,6 +2580,9 @@ function bindEvents() {
                 const select = document.getElementById('pxi_llm_model_select');
                 if (select) select.value = (settings().llm_models || []).includes(el.value) ? el.value : '';
             }
+            if (key === 'tpl_engine') { populateGptStyles(); loadTemplateEditor(); }
+            if (key === 'param_engine') toggleSourceBlocks();
+            if (key === 'gpt_style') toggleSourceBlocks();
             if (key === 'c1_source') setC1State('ยังไม่ได้เชื่อมต่อ — กรอกค่าด้านล่างแล้วกด "เชื่อมต่อ"');
             context.saveSettingsDebounced();
         });
@@ -2090,6 +2617,8 @@ function bindEvents() {
         setC2State(`เลือกโมเดล ${value} แล้ว`, 'ok');
     });
     document.getElementById('pxi_nai_save')?.addEventListener('click', () => saveNovelKey());
+    document.getElementById('pxi_model_list_fetch')?.addEventListener('click', () => fetchRemoteModelList());
+    document.getElementById('pxi_nai_model')?.addEventListener('change', () => populateNaiModels());
     document.getElementById('pxi_size_save')?.addEventListener('click', () => applySizeFromField());
     document.getElementById('pxi_size')?.addEventListener('change', () => applySizeFromField());
     document.getElementById('pxi_size_preset')?.addEventListener('change', (event) => {
