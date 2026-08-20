@@ -233,7 +233,7 @@
                     </div>
 
                     <div class="pxi-note">อัปเกรดจากเวอร์ชันก่อน? template ที่บันทึกไว้จะไม่ถูกเขียนทับอัตโนมัติ — กด "รีเซ็ตทั้งหมด" เพื่อรับ default ตัวใหม่ (cast/ตำแหน่ง/ส่วนสูง/style tail)</div>
-                    <div class="pxi-note" id="pxi_manga_note">โหมด Manga Panel: โหมดนี้ใช้หลายฉากมาแบ่งช่อง ถ้า "ข้อความล่าสุด" ในหมวด ② เป็น 0 จะได้แค่ฉากเดียว — ตั้งเป็น 2-4 ก่อนใช้โหมดนี้ • แนะนำขนาดแนวตั้ง (เช่น 768x1344) สำหรับ 4koma แนวตั้ง และแนวนอนสำหรับสตริปแนวนอน • ถ้าอยากได้หน้าขาวดำจริง ๆ ให้เคลียร์ช่อง Positive suffix ที่มี very aesthetic/masterpiece ออกก่อน เพราะมันดันภาพไปทางภาพสีเดี่ยว</div>
+                    <div class="pxi-note" id="pxi_manga_note">โหมด Manga Panel: ใช้หลายฉากมาแบ่งช่อง ถ้า "ข้อความล่าสุด" ในหมวด ② เป็น 0 จะได้แค่ฉากเดียว — ตั้งเป็น 2-4 ก่อนใช้โหมดนี้ • แนะนำขนาดแนวตั้ง (เช่น 768x1344) สำหรับ 4koma แนวตั้ง • สไตล์หน้า (ขาวดำ/สี) เลือกตอนกดสร้าง หรือตั้งค่าเริ่มต้นไว้ในหมวด ⑤</div>
                     <div class="pxi-row">
                         <div class="menu_button menu_button_icon" id="pxi_tpl_reset"><i class="fa-solid fa-rotate-left"></i><span>รีเซ็ตโหมดนี้</span></div>
                         <div class="menu_button menu_button_icon" id="pxi_tpl_reset_all"><i class="fa-solid fa-broom"></i><span>รีเซ็ตทั้งหมด</span></div>
@@ -433,6 +433,21 @@
                             </div>
                         </div>
 
+                    </div>
+
+                    <div class="pxi-fieldset pxi-p-diffusion">
+                        <div class="pxi-fieldset-title">หน้าการ์ตูน (โหมด Manga Panel)</div>
+                        <label for="pxi_manga_style">สไตล์หน้าเริ่มต้น</label>
+                        <select id="pxi_manga_style" class="text_pole"></select>
+                        <label class="checkbox_label" for="pxi_manga_style_remember">
+                            <input id="pxi_manga_style_remember" type="checkbox">
+                            <span>จำสไตล์หน้าไว้ ไม่ต้องถามตอนกดสร้าง</span>
+                        </label>
+                        <small class="pxi-hint">ใช้เฉพาะโหมด Manga Panel ฝั่ง NovelAI/Diffusion • ปลดติ๊กเพื่อให้ถามทุกครั้ง</small>
+                    </div>
+
+                    <div class="pxi-fieldset pxi-p-gpt">
+                        <div class="pxi-fieldset-title">สไตล์ภาพ</div>
                         <label class="checkbox_label" for="pxi_remember_style">
                             <input id="pxi_remember_style" type="checkbox">
                             <span>จำสไตล์ภาพไว้ ไม่ต้องถามตอนกดสร้าง <small class="pxi-hint pxi-inline">(ปลดติ๊กเพื่อให้ถามทุกครั้ง)</small></span>

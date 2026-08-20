@@ -64,7 +64,7 @@ const DEFAULT_TEMPLATES = {
     },
     manga: {
         label: 'Manga Panel (แบ่งช่อง)',
-        sys: `You write image prompts for NovelAI Diffusion V4.5 (anime model).\nTurn the recent scene into ONE manga page made of separate panels - a sequence of moments, not a single illustration.\n\n=== PAGE TAGS - ALWAYS FIRST ===\nOpen the prompt with the layout tags, in this order: "comic, multiple views, panel layout, borders, greyscale, monochrome, screentone, manga".\nThen state the panel count and shape with ONE of these:\n- "4koma" for four equal panels stacked vertically. This is the layout the model renders most reliably - prefer it unless the scene needs something else.\n- "2koma" for two panels.\n- "3koma" for three.\n- "6 panels" or "9 panels" for a denser page.\nNever combine two count tags, and never write a single-image framing tag such as "cowboy shot" or "close-up" at page level - those belong to a panel description, not the page.\n\n=== NO TEXT AT ALL ===\nThis page carries no writing of any kind. Always include "no text, textless, speechless" near the front, and put "text, speech bubble, dialogue, sound effects, english text, japanese text, signature, watermark" out of your mind entirely - never write them as positive tags. Draw the story through expression, posture and framing alone.\n\n=== PANEL BREAKDOWN ===\nPick one beat per panel from the scene, in the order they happen, then write each panel as its own emphasis group so the model keeps them apart:\n   "1.05::panel 1, <framing>, <who is in it>, <what they are doing>, <expression>, <background> ::"\nRules for a panel group:\n- Number them "panel 1", "panel 2" and so on, in reading order.\n- Give every panel its own framing tag: "close-up", "upper body", "full body", "wide shot", "from above", "from behind", "pov". Vary them across panels - a page where every panel is the same shot reads flat.\n- Repeat the character's key identity and appearance tags inside every panel they appear in. The model does not carry a character across panels on its own.\n- Keep each panel to 6-12 tags. A panel is a single moment, not a whole scene.\n- 2 to 4 panel groups is the sweet spot. Beyond that each panel gets too small to read.\n\n=== STORY SHAPE ===\nFollow the beats the scene actually shows, in order. A useful default when the scene is short: establishing shot, then reaction, then the action itself, then the aftermath.\n\n${IDENTITY_RULE}\n${RENAMED_RULE}\n${DENSITY_RULE}\n${RATING_RULE}\n\n${STYLE_TAIL}\nFor a manga page, drop the franchise style line when the page is greyscale - "manga, greyscale, screentone" already sets the look - but always keep the quality tail.\n\nA colour page is possible: swap "greyscale, monochrome, screentone" for "colorful, anime coloring" and keep everything else. Match the layout to the canvas: a tall canvas suits a vertical 4koma, a wide one suits a horizontal strip.\n35-55 tags total.\n${NAI_RULES}`,
+        sys: `You write image prompts for NovelAI Diffusion V4.5 (anime model).\nTurn the recent scene into ONE comic page made of separate panels - a sequence of moments, not a single illustration.\n\n=== STEP 1: PICK THE BEATS ===\nRead the scene and choose 2-4 moments that actually move the story, in the order they happen. Skip anything that would look identical to the panel before it.\nA reliable shape when the scene is short: establishing shot, then the reaction, then the action itself, then the aftermath.\nOne beat per panel. A panel is a single instant, not a summary.\n\n=== STEP 2: PAGE HEADER - ALWAYS FIRST ===\nOpen the prompt with the page tags in this order:\n1. "comic, silent comic, multiple views, panel layout, borders" - "silent comic" is the danbooru tag for a wordless page and does the heaviest lifting for keeping text out.\n2. The panel count, exactly one of: "4koma" (four equal panels stacked vertically - by far the most reliable), "2koma", "3koma", or "6 panels" for a denser page. Never combine two count tags.\n3. The total cast across the whole page as count tags: 1girl / 2girls / 1girl, 1boy ...\n4. "no text, textless" as a safety net.\nNever put a single-image framing tag such as "cowboy shot" or "close-up" in the header - framing belongs to individual panels. Putting it here collapses the page into one picture with decorative borders.\n\n=== STEP 3: ONE GROUP PER PANEL ===\nWrite each panel as its own numeric-emphasis group so the model keeps them apart:\n   "1.05::panel 1, <framing>, <character tags>, <expression>, <pose or action>, <background> ::"\nRules:\n- Number them "panel 1", "panel 2" and so on in reading order, and close every group with a bare "::".\n- Give every panel its own framing tag and vary it across the page: close-up, upper body, full body, wide shot, from above, from behind, pov, from side. A page where every panel is the same shot reads flat.\n- Repeat each character's identity and key appearance tags inside every panel they appear in. The model does not carry a character from one panel to the next on its own.\n- Keep each panel to 6-12 tags.\n- If a panel has no people in it - a hand, an object, a doorway, the sky - say so with "no humans" inside that group. Cutaway panels like this make a page feel like real manga.\n\n=== STEP 4: WHAT NOT TO DO ===\n- No speech bubbles, no captions, no sound effects, no signage, no lettering of any kind. Never write those as positive tags. Tell the story through expression, posture and framing alone.\n- Do not describe the same moment twice in different panels.\n- Do not let one character's tags spill into another panel's group.\n\n${IDENTITY_RULE}\n${RENAMED_RULE}\n${DENSITY_RULE}\n${RATING_RULE}\n\nThe page look is given separately in the input - follow it exactly and do not add colour tags that contradict it.\nClose with: masterpiece, very aesthetic, absurdres, best quality\n40-60 tags total.\n${NAI_RULES}`,
     },
     last: {
         label: 'Last Message (ฉากล่าสุด)',
@@ -162,6 +162,48 @@ const GPT_TEMPLATES = {
     },
 };
 
+/* ---------- สไตล์หน้าการ์ตูนฝั่ง NovelAI ---------- */
+
+const MANGA_STYLE_PRESETS = {
+    mono: {
+        label: 'ขาวดำ + สกรีนโทน (คลาสสิก)',
+        text: 'Page look: greyscale, monochrome, screentone, halftone, manga. Shade with screentone and hatching, no colour anywhere.',
+    },
+    mono_clean: {
+        label: 'ขาวดำ เส้นสะอาด ไม่มีสกรีนโทน',
+        text: 'Page look: greyscale, monochrome, lineart, high contrast, manga. Flat blacks and clean whites, no screentone, no halftone dots.',
+    },
+    colour: {
+        label: 'สีเต็ม (อนิเมะ)',
+        text: 'Page look: colorful, anime coloring, cel shading, comic. Full colour panels with clean cel shading, no greyscale, no screentone.',
+    },
+    webtoon: {
+        label: 'เว็บตูน (สีนุ่ม แสงฟุ้ง)',
+        text: 'Page look: colorful, soft shading, gradient, bloom, comic. Soft digital colour with glowing rim light and gentle gradients, in the manner of a webtoon.',
+    },
+    sepia: {
+        label: 'ซีเปีย / ย้อนยุค',
+        text: 'Page look: sepia, monochrome, retro artstyle, screentone, comic. Aged paper tone throughout, muted and warm, as if printed decades ago.',
+    },
+    sketch: {
+        label: 'ร่างดินสอ (storyboard)',
+        text: 'Page look: sketch, greyscale, graphite (medium), rough, comic. Loose construction lines and visible hatching, like a storyboard rather than a finished page.',
+    },
+};
+
+const MANGA_STYLE_ORDER = ['mono', 'mono_clean', 'colour', 'webtoon', 'sepia', 'sketch'];
+
+let runMangaOverride = '';
+
+function mangaStyleKey() {
+    const key = runMangaOverride || settings().manga_style;
+    return MANGA_STYLE_PRESETS[key] ? key : 'mono';
+}
+
+function mangaStyleText() {
+    return MANGA_STYLE_PRESETS[mangaStyleKey()].text;
+}
+
 const MODES = Object.keys(DEFAULT_TEMPLATES);
 
 function defaultTemplate(mode) {
@@ -229,6 +271,8 @@ const defaultSettings = {
     gpt_output_compression: 100,
     gpt_background: 'auto',
     gpt_moderation: 'auto',
+    manga_style: 'mono',
+    manga_style_remember: false,
     gpt_style: 'realistic',
     gpt_style_custom: '',
     remember_style: false,
@@ -312,6 +356,8 @@ const BINDINGS = [
     ['pxi_gpt_output_compression', 'gpt_output_compression', 'number'],
     ['pxi_gpt_background', 'gpt_background', 'text'],
     ['pxi_gpt_moderation', 'gpt_moderation', 'text'],
+    ['pxi_manga_style', 'manga_style', 'text'],
+    ['pxi_manga_style_remember', 'manga_style_remember', 'bool'],
     ['pxi_gpt_style', 'gpt_style', 'text'],
     ['pxi_gpt_style_custom', 'gpt_style_custom', 'text'],
     ['pxi_remember_style', 'remember_style', 'bool'],
@@ -421,6 +467,7 @@ function initSettings() {
     if (!['auto', 'path', 'exact'].includes(s.llm_url_mode)) s.llm_url_mode = 'auto';
     if (!s.gpt_templates || typeof s.gpt_templates !== 'object') s.gpt_templates = {};
     if (!GPT_STYLE_PRESETS[s.gpt_style]) s.gpt_style = 'realistic';
+    if (!MANGA_STYLE_PRESETS[s.manga_style]) s.manga_style = 'mono';
     if (s.c2_source === 'gptimage') { s.c2_source = 'custom'; s.param_engine = 'gpt'; s.tpl_engine = 'gpt'; }
     if (!['nai', 'custom'].includes(s.c2_source)) s.c2_source = 'nai';
     if (s.engine === 'gpt') { s.param_engine ??= 'gpt'; s.tpl_engine ??= 'gpt'; }
@@ -920,6 +967,7 @@ async function buildStage1Messages(mode = 'free', extra = '') {
     let system = substitute(template.sys).trim();
     // สไตล์ยึดจากหมวด ⑤ Image Parameters เท่านั้น ไม่ผูกกับชุด template ที่กำลังเปิดดู
     if (paramsAreGpt()) system = `${system}\n\n${gptStyleText(mode)}`;
+    else if (mode === 'manga') system = `${system}\n\n${mangaStyleText()}`;
     if (settings().llm_can_search) system = `${system}\n\n${SEARCH_RULE}`;
     if (settings().cot_mode === 'light') system = `${system}\n\n${PLANNING_RULE}`;
     if (system) messages.push({ role: 'system', content: system });
@@ -1715,6 +1763,56 @@ async function askStyle(mode) {
     return chosen;
 }
 
+/** ถามสไตล์หน้าการ์ตูนก่อนเจน (ฝั่ง NovelAI/Diffusion) */
+async function askMangaStyle() {
+    const context = getContext();
+    const s = settings();
+
+    const root = document.createElement('div');
+    root.className = 'pxi-stylebox';
+
+    const title = document.createElement('h3');
+    title.textContent = 'หน้าการ์ตูนแบบไหน';
+    const hint = document.createElement('div');
+    hint.className = 'pxi-hint';
+    hint.textContent = 'จะถูกส่งไปพร้อม template ชุด Manga Panel ให้ Connection 1 เขียน prompt';
+
+    const select = document.createElement('select');
+    select.className = 'text_pole';
+    for (const key of MANGA_STYLE_ORDER) {
+        const option = document.createElement('option');
+        option.value = key;
+        option.textContent = MANGA_STYLE_PRESETS[key].label;
+        select.append(option);
+    }
+    select.value = mangaStyleKey();
+
+    const rememberLabel = document.createElement('label');
+    rememberLabel.className = 'checkbox_label';
+    const remember = document.createElement('input');
+    remember.type = 'checkbox';
+    const rememberText = document.createElement('span');
+    rememberText.textContent = 'จำไว้ ไม่ต้องถามอีก (ยกเลิกได้ที่หมวด ⑤)';
+    rememberLabel.append(remember, rememberText);
+
+    root.append(title, hint, select, rememberLabel);
+
+    const ok = await context.callGenericPopup(root, context.POPUP_TYPE.CONFIRM, '', {
+        okButton: 'สร้างภาพ',
+        cancelButton: 'ยกเลิก',
+    });
+    if (!ok) return null;
+
+    const chosen = select.value;
+    if (remember.checked) {
+        s.manga_style = chosen;
+        s.manga_style_remember = true;
+        loadSettingsToUi();
+        context.saveSettingsDebounced();
+    }
+    return chosen;
+}
+
 async function runPipeline({ mode = 'free', rawPrompt = '', extra = '', quiet = false } = {}) {
     const s = settings();
     if (!s.enabled) { notify('Extension ถูกปิดอยู่', 'warning'); return null; }
@@ -1729,6 +1827,14 @@ async function runPipeline({ mode = 'free', rawPrompt = '', extra = '', quiet = 
         const fromStage1 = !prompt;
         lastAnalysis = '';
         runStyleOverride = '';
+        runMangaOverride = '';
+
+        if (fromStage1 && mode === 'manga' && !paramsAreGpt() && !s.manga_style_remember) {
+            setProgress('style');
+            const chosen = await askMangaStyle();
+            if (!chosen) { setStatus('ยกเลิกแล้ว'); return null; }
+            runMangaOverride = chosen;
+        }
 
         if (fromStage1 && paramsAreGpt() && !s.remember_style) {
             setProgress('style');
@@ -1771,6 +1877,7 @@ async function runPipeline({ mode = 'free', rawPrompt = '', extra = '', quiet = 
     } finally {
         isBusy = false;
         runStyleOverride = '';
+        runMangaOverride = '';
         userAborted = false;
         releaseWakeLock();
         setTimeout(() => setProgress(null), 900);
@@ -2511,6 +2618,20 @@ async function fetchRemoteModelList({ silent = false } = {}) {
     }
 }
 
+function populateMangaStyles() {
+    const select = document.getElementById('pxi_manga_style');
+    if (!select || select.dataset?.filled === '1') return;
+    select.innerHTML = '';
+    for (const key of MANGA_STYLE_ORDER) {
+        const option = document.createElement('option');
+        option.value = key;
+        option.textContent = MANGA_STYLE_PRESETS[key].label;
+        select.append(option);
+    }
+    if (select.dataset) select.dataset.filled = '1';
+    select.value = mangaStyleKey();
+}
+
 function populateGptStyles() {
     const select = document.getElementById('pxi_gpt_style');
     if (!select || select.dataset?.filled === '1') return;
@@ -2748,6 +2869,7 @@ function loadSettingsToUi() {
     toggleSourceBlocks();
     populateSizePresets();
     populateNaiModels();
+    populateMangaStyles();
     populateGptStyles();
     populateImageModels();
     populateLlmModels();
