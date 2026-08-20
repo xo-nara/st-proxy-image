@@ -71,6 +71,16 @@
                         </div>
                         <div id="pxi_c1_state" class="pxi-note">ยังไม่ได้เชื่อมต่อ — กรอกค่าด้านล่างแล้วกด "เชื่อมต่อ"</div>
 
+                        <label class="checkbox_label" for="pxi_c1_via_server">
+                            <input id="pxi_c1_via_server" type="checkbox">
+                            <span>ยิงผ่านเซิร์ฟเวอร์ SillyTavern <small class="pxi-hint pxi-inline">(ทนการพับจอ/สลับแอป — แนะนำให้เปิดไว้)</small></span>
+                        </label>
+                        <div class="pxi-note">
+                            เปิดไว้ = ให้ Node ที่รันอยู่ใน Termux เป็นคนยิงไปหา proxy แทนเบราว์เซอร์ คำขอจึงไม่ตายตอนพับจอ (Termux ถือ wakelock ของตัวเองอยู่แล้ว)<br>
+                            ใช้ได้เฉพาะเมื่อ URL ปลายทางลงท้ายด้วย <code>/chat/completions</code> เท่านั้น — โหมด "ใช้ URL นี้ตรง ๆ" หรือ path แปลก ๆ จะยิงตรงจากเบราว์เซอร์เหมือนเดิม<br>
+                            ปิดไว้ = ยิงตรงจากเบราว์เซอร์ เร็วกว่าเล็กน้อยแต่จะหลุดถ้าพับจอ
+                        </div>
+
                         <label for="pxi_llm_url_mode">โหมด URL</label>
                         <select id="pxi_llm_url_mode" class="text_pole">
                             <option value="auto">อัตโนมัติ — เติม /v1 และ path มาตรฐานให้</option>

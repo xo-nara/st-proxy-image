@@ -341,12 +341,11 @@
 #pxi_progress.pxi-progress {
     position: relative;
     order: -1;
+    display: flex;
+    align-items: center;
+    gap: 6px;
     width: 100%;
-    height: 16px;
-    margin-bottom: 2px;
-    border-radius: 8px;
-    overflow: hidden;
-    background-color: var(--black30a);
+    padding: 0 4px 2px 4px;
 }
 
 #pxi_progress.pxi-hidden {
@@ -354,20 +353,38 @@
 }
 
 #pxi_progress .pxi-progress-fill {
-    height: 100%;
+    height: 3px;
     width: 0;
+    flex: 0 0 auto;
+    min-width: 8px;
+    border-radius: 2px;
     background-color: var(--SmartThemeQuoteColor, #6bcB77);
-    opacity: 0.35;
-    transition: width 0.35s ease;
+    opacity: 0.75;
+    transition: width 0.3s ease;
+}
+
+#pxi_progress.pxi-phase-c2 .pxi-progress-fill {
+    background-color: var(--golden, #e0a63c);
 }
 
 #pxi_progress .pxi-progress-text {
-    position: absolute;
-    inset: 0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 0.7em;
+    flex: 0 0 auto;
+    font-size: 0.62em;
+    line-height: 1;
     white-space: nowrap;
-    opacity: 0.9;
+    opacity: 0.65;
+}
+
+#pxi_progress .pxi-progress-track {
+    flex: 1 1 auto;
+    height: 3px;
+    border-radius: 2px;
+    overflow: hidden;
+    background-color: var(--black30a);
+}
+
+#pxi_progress .pxi-progress-fill {
+    flex: none;
+    min-width: 0;
+    height: 100%;
 }

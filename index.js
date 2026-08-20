@@ -189,6 +189,7 @@ const defaultSettings = {
     c1_profile: '',
     llm_url: '',
     llm_url_mode: 'auto',
+    c1_via_server: true,
     llm_gen_path: 'chat/completions',
     llm_models_path: 'models',
     llm_models: [],
@@ -278,6 +279,7 @@ const BINDINGS = [
     ['pxi_c1_profile', 'c1_profile', 'text'],
     ['pxi_llm_url', 'llm_url', 'text'],
     ['pxi_llm_url_mode', 'llm_url_mode', 'text'],
+    ['pxi_c1_via_server', 'c1_via_server', 'bool'],
     ['pxi_llm_gen_path', 'llm_gen_path', 'text'],
     ['pxi_llm_models_path', 'llm_models_path', 'text'],
     ['pxi_llm_key', 'llm_key', 'text'],
@@ -916,7 +918,8 @@ async function buildStage1Messages(mode = 'free', extra = '') {
 
     const messages = [];
     let system = substitute(template.sys).trim();
-    if (useGpt) system = `${system}\n\n${gptStyleText(mode)}`;
+    // สไตล์ยึดจากหมวด ⑤ Image Parameters เท่านั้น ไม่ผูกกับชุด template ที่กำลังเปิดดู
+    if (paramsAreGpt()) system = `${system}\n\n${gptStyleText(mode)}`;
     if (settings().llm_can_search) system = `${system}\n\n${SEARCH_RULE}`;
     if (settings().cot_mode === 'light') system = `${system}\n\n${PLANNING_RULE}`;
     if (system) messages.push({ role: 'system', content: system });
@@ -1056,8 +1059,62 @@ async function stage1ViaProfile(messages) {
     return { text, raw: String(text || '').slice(0, 800), finish: '' };
 }
 
+/**
+ * ฐาน URL ที่เซิร์ฟเวอร์ ST รับ relay ได้
+ * endpoint ฝั่ง ST เป็น `${base}/chat/completions` ตายตัว
+ * ถ้า URL ที่ตั้งไว้ไม่ได้ลงท้ายแบบนั้น ต้องยิงตรงจากเบราว์เซอร์แทน
+ */
+function relayBaseUrl() {
+    let url;
+    try { url = resolveLlmUrl('generate'); } catch { return null; }
+    if (!url) return null;
+    const match = String(url).match(/^(.*)\/chat\/completions\/?$/i);
+    return match ? match[1] : null;
+}
+
+/** ยิงผ่านเซิร์ฟเวอร์ ST (Node) เพื่อให้คำขอไม่ตายตอนพับจอ */
+async function stage1ViaRelay(messages, base) {
+    const context = getContext();
+    const s = settings();
+    const body = {
+        chat_completion_source: 'openai',
+        reverse_proxy: base,
+        proxy_password: String(s.llm_key || '').trim(),
+        model: s.llm_model || undefined,
+        messages,
+        max_tokens: tokenBudget(),
+        temperature: Number.isFinite(Number(s.llm_temp)) ? Number(s.llm_temp) : 0.7,
+        stream: false,
+    };
+    const raw = await requestRaw('/api/backends/chat-completions/generate', {
+        method: 'POST',
+        headers: context.getRequestHeaders(),
+        body: JSON.stringify(body),
+    }, s.llm_timeout, '1');
+
+    let data;
+    try { data = JSON.parse(raw); } catch { throw new PxiError('เซิร์ฟเวอร์ ST ตอบกลับไม่ใช่ JSON', { stage: '1', raw }); }
+    if (data?.error) {
+        throw new PxiError(String(data.error?.message || 'คำขอถูกปฏิเสธ'), {
+            stage: '1',
+            raw,
+            hints: ['ตรวจ URL และคีย์ของ Connection 1', 'ดู log ในหน้าต่าง Termux ที่รัน SillyTavern เพื่อดูข้อความจริงจากปลายทาง'],
+        });
+    }
+
+    const choice = data?.choices?.[0];
+    let text = choice?.message?.content ?? choice?.text ?? data?.content ?? '';
+    if (Array.isArray(text)) text = text.map(p => p?.text || '').join(' ');
+    return { text, raw: JSON.stringify(data).slice(0, 1200), finish: choice?.finish_reason || choice?.native_finish_reason };
+}
+
 async function stage1ViaCustom(messages) {
     const s = settings();
+    if (s.c1_via_server) {
+        const base = relayBaseUrl();
+        if (base) return await stage1ViaRelay(messages, base);
+        console.warn(LOG, 'โหมด URL นี้ relay ผ่านเซิร์ฟเวอร์ ST ไม่ได้ ยิงตรงจากเบราว์เซอร์แทน');
+    }
     const url = resolveLlmUrl('generate');
     const data = await requestJson(url, {
         method: 'POST',
@@ -1523,14 +1580,15 @@ async function postImageMessage(imagePath, prompt, mode) {
 /* แถบสถานะ + ปุ่ม Stop ในช่องพิมพ์ของ SillyTavern                     */
 /* ================================================================== */
 
+/** แต่ละขั้นผูกกับ connection ไหน และคืบหน้าเท่าไรใน connection นั้น */
 const PROGRESS_STEPS = {
-    style: { label: 'เลือกสไตล์', percent: 5 },
-    analyse: { label: 'วิเคราะห์ฉาก', percent: 20 },
-    prompt: { label: 'เขียน prompt', percent: 40 },
-    review: { label: 'รอตรวจ prompt', percent: 55 },
-    image: { label: 'เจนรูป', percent: 75 },
-    upload: { label: 'บันทึกรูป', percent: 92 },
-    done: { label: 'เสร็จสิ้น', percent: 100 },
+    style:   { phase: 'c1', label: 'เลือกสไตล์', percent: 10 },
+    analyse: { phase: 'c1', label: 'วิเคราะห์ฉาก', percent: 45 },
+    prompt:  { phase: 'c1', label: 'เขียน prompt', percent: 80 },
+    review:  { phase: 'c1', label: 'รอตรวจ prompt', percent: 100 },
+    image:   { phase: 'c2', label: 'เจนรูป', percent: 65 },
+    upload:  { phase: 'c2', label: 'บันทึกรูป', percent: 90 },
+    done:    { phase: 'c2', label: 'เสร็จสิ้น', percent: 100 },
 };
 
 function ensureProgressUi() {
@@ -1555,7 +1613,7 @@ function ensureProgressUi() {
         const bar = document.createElement('div');
         bar.id = 'pxi_progress';
         bar.className = 'pxi-progress pxi-hidden';
-        bar.innerHTML = '<div class="pxi-progress-fill"></div><span class="pxi-progress-text"></span>';
+        bar.innerHTML = '<div class="pxi-progress-track"><div class="pxi-progress-fill"></div></div><span class="pxi-progress-text"></span>';
         holder.prepend(bar);
     }
 }
@@ -1573,13 +1631,16 @@ function setProgress(step, detail = '') {
         return;
     }
 
-    const info = PROGRESS_STEPS[step] || { label: step, percent: 0 };
+    const info = PROGRESS_STEPS[step] || { phase: 'c1', label: step, percent: 0 };
     bar.classList.remove('pxi-hidden');
+    bar.classList.toggle('pxi-phase-c2', info.phase === 'c2');
     stop?.classList.toggle('pxi-hidden', step === 'done');
+
     const fill = bar.querySelector('.pxi-progress-fill');
     const text = bar.querySelector('.pxi-progress-text');
     if (fill) fill.style.width = `${info.percent}%`;
-    if (text) text.textContent = detail ? `${info.label} — ${detail}` : info.label;
+    const prefix = info.phase === 'c2' ? '②' : '①';
+    if (text) text.textContent = detail ? `${prefix} ${info.label} · ${detail}` : `${prefix} ${info.label}`;
 }
 
 /* ================================================================== */
@@ -2504,7 +2565,14 @@ function updateLlmUrlModeUi() {
     try {
         const generate = resolveLlmUrl('generate');
         const models = resolveLlmUrl('models');
-        hint.textContent = `สร้าง prompt → POST ${generate}` + (models ? `\nรายชื่อโมเดล → GET ${models}` : '\nโหมดนี้ไม่ดึงรายชื่อโมเดล');
+        const base = s.c1_via_server ? relayBaseUrl() : null;
+        const route = base
+            ? `สร้าง prompt → ผ่านเซิร์ฟเวอร์ ST → POST ${base}/chat/completions`
+            : `สร้าง prompt → ยิงตรงจากเบราว์เซอร์ → POST ${generate}`;
+        const warn = (s.c1_via_server && !base)
+            ? '\n(โหมด URL นี้ relay ไม่ได้ ต้องลงท้ายด้วย /chat/completions)'
+            : '';
+        hint.textContent = route + warn + (models ? `\nรายชื่อโมเดล → GET ${models}` : '\nโหมดนี้ไม่ดึงรายชื่อโมเดล');
         hint.classList.remove('pxi-warn');
     } catch (error) {
         hint.textContent = String(error?.message || error);
@@ -2723,7 +2791,7 @@ function bindEvents() {
             if (key === 'swipe_regen' || key === 'take_over_overswipe') resolveOverswipeConflict();
             if (key === 'c2_source') setC2State('ยังไม่ได้เชื่อมต่อ — กรอกค่าด้านล่างแล้วกด "เชื่อมต่อ"');
             if (key === 'img_url' || key === 'img_url_mode' || key === 'img_gen_path' || key === 'img_models_path') updateUrlModeUi();
-            if (key === 'llm_url' || key === 'llm_url_mode' || key === 'llm_gen_path' || key === 'llm_models_path') updateLlmUrlModeUi();
+            if (key === 'llm_url' || key === 'llm_url_mode' || key === 'llm_gen_path' || key === 'llm_models_path' || key === 'c1_via_server') updateLlmUrlModeUi();
             if (key === 'llm_model') {
                 const select = document.getElementById('pxi_llm_model_select');
                 if (select) select.value = (settings().llm_models || []).includes(el.value) ? el.value : '';
