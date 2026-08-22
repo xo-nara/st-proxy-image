@@ -57,11 +57,11 @@ Connection Profile ของ ST                NovelAI Official
 ช่อง **Extra instruction** ในหมวด ② คือค่าของ `{{extra}}` — แทรกท้าย user message เป็นบล็อก `--- Extra instruction ---` ทุกโหมด และข้อความหลัง `/pxi` จะถูกต่อเข้ากับช่องนี้
 
 ## Cheatsheet (หมวด ⑥)
-ปุ่มเล็ก 11 หัวข้อ กดอ่านในป็อปอัพ คัดลอก หรือบันทึกเป็น `.md` ได้ (มีปุ่มบันทึกรวมทั้งหมดด้วย)
-Artist tags • source#/target#/mutual# • Density/น้ำหนักแท็ก • Quality/Aesthetic/Special tags •
-Undesired Content ทางการ • Medium/Art style/Coloring/FX • มุมกล้อง/เฟรม/แสง • Character & Costume variant tags • NSFW / rating tags (18+) • **GPT-Image 2 (คู่มือย่อ)** • ค่าที่แนะนำ + เกร็ด Anlas
+มี dropdown ให้เลือกอ่านแยกตาม engine — เลือกแล้วปุ่มหัวข้อจะเปลี่ยนตาม และปุ่มบันทึก .md จะได้เฉพาะฝั่งที่เลือก
 
-ปุ่ม **ใส่ค่าที่ NovelAI แนะนำ** ในหมวด ⑤ จะเซ็ต suffix เป็นชุด quality tag ทางการของโมเดลที่เลือก, negative เป็นชุด Human Focus, และ sampler/scheduler/steps/CFG ให้ทันที
+**NovelAI Diffusion (10 หัวข้อ)** Artist tags • source#/target#/mutual# • Density/น้ำหนักแท็ก • Quality/Aesthetic/Special tags • Undesired Content ทางการ • Medium/Art style/Coloring/FX • มุมกล้อง/เฟรม/แสง • Character & Costume variant tags • NSFW / rating tags (18+) • ค่าที่แนะนำ + เกร็ด Anlas
+
+**GPT-Image (7 หัวข้อ)** เลือกโมเดล + ขนาดภาพ • หลักการเขียน prompt • องค์ประกอบภาพและคน • ข้อจำกัดและการแก้ภาพ • ตัวหนังสือในภาพ • พารามิเตอร์และค่าใช้จ่าย • ใช้กับส่วนขยายนี้
 
 ## Connection 1 (โหมด Custom)
 มีชุดเดียวกับ Connection 2: **โหมด URL** 3 แบบ (อัตโนมัติ / กำหนด path เอง / ใช้ URL ตรง ๆ) พร้อมบรรทัดพรีวิวปลายทางจริง, ปุ่ม **เชื่อมต่อ** ที่ดึง `/models` มาเติม dropdown, ปุ่ม **ทดสอบ** ที่ยิงข้อความสั้นไปตรวจว่าตอบกลับได้จริง และแถบสถานะบอกผล
@@ -126,6 +126,14 @@ Undesired Content ทางการ • Medium/Art style/Coloring/FX • มุ
 ### เจนไม่ผ่านแล้วแก้ต่อได้ทันที
 ถ้า Connection 2 ตีกลับ (โดนกรองเนื้อหา คิวเต็ม พารามิเตอร์ผิด) จะขึ้น popup บอกสาเหตุ พอกด **"แก้ prompt แล้วลองใหม่"** จะเด้งช่องแก้ prompt กลับมาให้ทันที แก้แล้วยิงต่อได้เลยโดยไม่ต้องเริ่มใหม่ทั้งกระบวนการ
 ลองได้สูงสุด 5 ครั้งต่อรอบ แล้วหยุดเอง กันวนไม่จบและกันเปลืองเครดิต • ใช้ได้ทั้งตอนกดสร้าง ตอนปัดเจนใบใหม่ และปุ่มทดสอบเจนรูป
+
+## Vibe — ชุดแท็กที่ใช้ซ้ำ (หมวด ⑤)
+บันทึกชุดแท็กสไตล์ที่ใช้บ่อยไว้เป็นพรีเซ็ต แล้วเรียกใช้ซ้ำได้ทุกโหมด เพื่อให้ภาพชุดเดียวกันหน้าตาไปทางเดียวกัน
+- สร้าง / แก้ / ลบ ได้ในกล่อง Vibe มีชื่อ, แท็ก และบันทึกช่วยจำ
+- **ฝั่ง NovelAI** แท็กถูกต่อเข้า prompt ก่อน suffix • **ฝั่ง GPT-Image** ใส่เป็นคำสั่งใน system แทน (เพราะ prompt เป็นประโยค)
+- เลือกได้ตอนกดสร้างจาก popup หรือติ๊ก "จำ vibe ไว้" เพื่อใช้ค่าเดิมตลอด
+
+**หมายเหตุ:** นี่ไม่ใช่ Vibe Transfer ของ NovelAI (ที่เข้ารหัสภาพเป็น embedding และเสีย Anlas) เพราะเซิร์ฟเวอร์ SillyTavern ตัด `reference_image_multiple` ทิ้งเสมอ — อันนี้เป็นพรีเซ็ตแท็กที่ให้ผลใกล้เคียงโดยไม่เสีย Anlas และใช้ได้ทั้งสอง engine
 
 ## Image Parameters
 จัดเป็น 4 กลุ่ม: **ขนาดภาพ** (dropdown สำเร็จรูป + ช่องกำหนดเอง + ปุ่มบันทึก, ปัดเป็นทวีคูณของ 64 อัตโนมัติ, มีบรรทัดบอก "จะส่งจริง WxH" หลังผ่าน Anlas guard) • **การสุ่มภาพ** (Sampler, Scheduler, Steps, CFG, Seed, Upscale, Timeout) • **ตัวเลือกเสริม** (Variety boost, Decrisper, SMEA; SMEA DYN ปิดถาวรเพราะทำให้ภาพเพี้ยนบน V4 ขึ้นไป) • **แท็กประกอบ** (prefix / suffix / negative / extra body)

@@ -435,17 +435,6 @@
 
                     </div>
 
-                    <div class="pxi-fieldset pxi-p-diffusion">
-                        <div class="pxi-fieldset-title">หน้าการ์ตูน (โหมด Manga Panel)</div>
-                        <label for="pxi_manga_style">สไตล์หน้าเริ่มต้น</label>
-                        <select id="pxi_manga_style" class="text_pole"></select>
-                        <label class="checkbox_label" for="pxi_manga_style_remember">
-                            <input id="pxi_manga_style_remember" type="checkbox">
-                            <span>จำสไตล์หน้าไว้ ไม่ต้องถามตอนกดสร้าง</span>
-                        </label>
-                        <small class="pxi-hint">ใช้เฉพาะโหมด Manga Panel ฝั่ง NovelAI/Diffusion • ปลดติ๊กเพื่อให้ถามทุกครั้ง</small>
-                    </div>
-
                     <div class="pxi-fieldset pxi-p-gpt">
                         <div class="pxi-fieldset-title">สไตล์ภาพ</div>
                         <label class="checkbox_label" for="pxi_remember_style">
@@ -589,15 +578,57 @@
                             <textarea id="pxi_extra_body" class="text_pole textarea_compact pxi-mono" rows="3"></textarea>
                         </div>
                     </div>
+
+                    <div class="pxi-fieldset">
+                        <div class="pxi-fieldset-title">Vibe — ชุดแท็กที่ใช้ซ้ำ</div>
+                        <label for="pxi_vibe_select">Vibe ที่ใช้อยู่</label>
+                        <select id="pxi_vibe_select" class="text_pole"></select>
+
+                        <label for="pxi_vibe_name">ชื่อ</label>
+                        <input id="pxi_vibe_name" class="text_pole" type="text" placeholder="เช่น โทนหนังนัวร์">
+                        <label for="pxi_vibe_tags">แท็ก / คำบรรยาย</label>
+                        <textarea id="pxi_vibe_tags" class="text_pole textarea_compact" rows="3" placeholder="ฝั่ง NovelAI: ใส่แท็กคั่นคอมมา&#10;ฝั่ง GPT-Image: เขียนเป็นประโยคสั้น ๆ ก็ได้"></textarea>
+                        <label for="pxi_vibe_note">บันทึกช่วยจำ (ไม่ถูกส่งไปไหน)</label>
+                        <input id="pxi_vibe_note" class="text_pole" type="text" placeholder="ใช้กับฉากกลางคืน">
+
+                        <div class="pxi-row pxi-wrap">
+                            <div class="menu_button menu_button_icon" id="pxi_vibe_save"><i class="fa-solid fa-floppy-disk"></i><span>บันทึก</span></div>
+                            <div class="menu_button menu_button_icon" id="pxi_vibe_new"><i class="fa-solid fa-plus"></i><span>สร้างใหม่</span></div>
+                            <div class="menu_button menu_button_icon pxi-hidden" id="pxi_vibe_delete"><i class="fa-solid fa-trash"></i><span>ลบ</span></div>
+                        </div>
+
+                        <label class="checkbox_label" for="pxi_vibe_remember">
+                            <input id="pxi_vibe_remember" type="checkbox">
+                            <span>จำ vibe ไว้ ไม่ต้องถามตอนกดสร้าง</span>
+                        </label>
+                        <small class="pxi-hint">แท็กจะถูกต่อเข้า prompt ทุกครั้งที่เจน (ฝั่ง NovelAI ต่อท้ายก่อน suffix • ฝั่ง GPT-Image ใส่เป็นคำสั่งใน system) ใช้ได้ทุกโหมด</small>
+                    </div>
+
+                    <div class="pxi-fieldset pxi-p-diffusion">
+                        <div class="pxi-fieldset-title">หน้าการ์ตูน (โหมด Manga Panel)</div>
+                        <label for="pxi_manga_style">สไตล์หน้าเริ่มต้น</label>
+                        <select id="pxi_manga_style" class="text_pole"></select>
+                        <label class="checkbox_label" for="pxi_manga_style_remember">
+                            <input id="pxi_manga_style_remember" type="checkbox">
+                            <span>จำสไตล์หน้าไว้ ไม่ต้องถามตอนกดสร้าง</span>
+                        </label>
+                        <small class="pxi-hint">ใช้เฉพาะโหมด Manga Panel ฝั่ง NovelAI/Diffusion • ปลดติ๊กเพื่อให้ถามทุกครั้ง</small>
+                    </div>
+
                 </div>
             </div>
 
             <div class="inline-drawer pxi-sub">
                 <div class="inline-drawer-toggle inline-drawer-header">
-                    <b>⑥ Cheatsheet (NovelAI + GPT-Image)</b>
+                    <b>⑥ Cheatsheet</b>
                     <div class="inline-drawer-icon fa-solid fa-circle-chevron-down down"></div>
                 </div>
                 <div class="inline-drawer-content">
+                    <label for="pxi_docs_engine">อ่านคู่มือของ</label>
+                    <select id="pxi_docs_engine" class="text_pole">
+                        <option value="nai">NovelAI Diffusion</option>
+                        <option value="gpt">GPT-Image</option>
+                    </select>
                     <small class="pxi-hint">สรุปสั้น ๆ จาก docs.novelai.net และ OpenAI Cookbook กดอ่าน คัดลอก หรือบันทึกเก็บไว้ได้</small>
                     <div id="pxi_docs_list" class="pxi-docs-list"></div>
                     <div class="menu_button menu_button_icon" id="pxi_docs_save_all"><i class="fa-solid fa-file-arrow-down"></i><span>บันทึกทั้งหมดเป็น .md</span></div>

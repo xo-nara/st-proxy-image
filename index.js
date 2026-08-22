@@ -194,6 +194,20 @@ const MANGA_STYLE_PRESETS = {
 const MANGA_STYLE_ORDER = ['mono', 'mono_clean', 'colour', 'webtoon', 'sepia', 'sketch'];
 
 let runMangaOverride = '';
+let runVibeOverride = null;
+
+/** vibe ที่จะใช้รอบนี้ — null = ไม่ใช้ */
+function activeVibe() {
+    const s = settings();
+    if (runVibeOverride === 'none') return null;
+    const id = runVibeOverride || s.vibe_active;
+    if (!id) return null;
+    return (s.vibes || []).find(v => v.id === id) || null;
+}
+
+function vibeText() {
+    return String(activeVibe()?.tags || '').trim();
+}
 
 function mangaStyleKey() {
     const key = runMangaOverride || settings().manga_style;
@@ -271,6 +285,10 @@ const defaultSettings = {
     gpt_output_compression: 100,
     gpt_background: 'auto',
     gpt_moderation: 'auto',
+    docs_engine: 'nai',
+    vibes: [],
+    vibe_active: '',
+    vibe_remember: false,
     manga_style: 'mono',
     manga_style_remember: false,
     gpt_style: 'realistic',
@@ -356,6 +374,8 @@ const BINDINGS = [
     ['pxi_gpt_output_compression', 'gpt_output_compression', 'number'],
     ['pxi_gpt_background', 'gpt_background', 'text'],
     ['pxi_gpt_moderation', 'gpt_moderation', 'text'],
+    ['pxi_docs_engine', 'docs_engine', 'text'],
+    ['pxi_vibe_remember', 'vibe_remember', 'bool'],
     ['pxi_manga_style', 'manga_style', 'text'],
     ['pxi_manga_style_remember', 'manga_style_remember', 'bool'],
     ['pxi_gpt_style', 'gpt_style', 'text'],
@@ -468,6 +488,20 @@ function initSettings() {
     if (!s.gpt_templates || typeof s.gpt_templates !== 'object') s.gpt_templates = {};
     if (!GPT_STYLE_PRESETS[s.gpt_style]) s.gpt_style = 'realistic';
     if (!MANGA_STYLE_PRESETS[s.manga_style]) s.manga_style = 'mono';
+    if (!['nai', 'gpt'].includes(s.docs_engine)) s.docs_engine = 'nai';
+    if (!Array.isArray(s.vibes)) s.vibes = [];
+    s.vibes = s.vibes.filter(v => v && typeof v === 'object' && v.id).map(v => ({
+        id: String(v.id),
+        name: String(v.name || 'vibe'),
+        tags: String(v.tags || ''),
+        note: String(v.note || ''),
+    }));
+    const seenVibeIds = new Set();
+    for (const vibe of s.vibes) {
+        while (seenVibeIds.has(vibe.id)) vibe.id = `${vibe.id}_${Math.random().toString(36).slice(2, 6)}`;
+        seenVibeIds.add(vibe.id);
+    }
+    if (!s.vibes.some(v => v.id === s.vibe_active)) s.vibe_active = '';
     if (s.c2_source === 'gptimage') { s.c2_source = 'custom'; s.param_engine = 'gpt'; s.tpl_engine = 'gpt'; }
     if (!['nai', 'custom'].includes(s.c2_source)) s.c2_source = 'nai';
     if (s.engine === 'gpt') { s.param_engine ??= 'gpt'; s.tpl_engine ??= 'gpt'; }
@@ -967,6 +1001,8 @@ async function buildStage1Messages(mode = 'free', extra = '') {
     let system = substitute(template.sys).trim();
     // สไตล์ยึดจากหมวด ⑤ Image Parameters เท่านั้น ไม่ผูกกับชุด template ที่กำลังเปิดดู
     if (paramsAreGpt()) system = `${system}\n\n${gptStyleText(mode)}`;
+    const vibe = vibeText();
+    if (vibe) system = `${system}\n\nRecurring look to keep consistent across images: ${vibe}`;
     else if (mode === 'manga') system = `${system}\n\n${mangaStyleText()}`;
     if (settings().llm_can_search) system = `${system}\n\n${SEARCH_RULE}`;
     if (settings().cot_mode === 'light') system = `${system}\n\n${PLANNING_RULE}`;
@@ -1297,9 +1333,10 @@ function normaliseProse(text) {
 
 function composePrompt(prompt) {
     const s = settings();
+    const vibe = vibeText();
     // prefix/suffix เป็นแท็กคุณภาพของ NovelAI ไม่มีความหมายกับ GPT-Image
     if (paramsAreGpt()) return String(prompt || '').trim();
-    return [s.prefix, prompt, s.suffix].map(p => String(p || '').trim()).filter(Boolean).join(', ');
+    return [s.prefix, prompt, vibe, s.suffix].map(p => String(p || '').trim()).filter(Boolean).join(', ');
 }
 
 const SIZE_PRESETS = [
@@ -1700,47 +1737,99 @@ function mergeExtra(extra) {
         .filter(Boolean).join('\n');
 }
 
-/** ถามสไตล์ก่อนเจน เมื่อใช้ชุดพารามิเตอร์ GPT-Image และยังไม่ได้สั่งให้จำ */
-async function askStyle(mode) {
+/**
+ * ถามค่าที่ยังไม่ได้สั่งให้จำ ก่อนเริ่มเจน — รวมทุกอย่างไว้ใน popup เดียว
+ * คืน null เมื่อผู้ใช้กดยกเลิก, คืน {} เมื่อไม่มีอะไรต้องถาม
+ */
+async function askBeforeGenerate(mode) {
     const context = getContext();
     const s = settings();
+
+    const wantVibe = (s.vibes || []).length > 0 && !s.vibe_remember;
+    const wantStyle = paramsAreGpt() && !s.remember_style;
+    const wantManga = mode === 'manga' && !paramsAreGpt() && !s.manga_style_remember;
+    if (!wantVibe && !wantStyle && !wantManga) return {};
 
     const root = document.createElement('div');
     root.className = 'pxi-stylebox';
 
     const title = document.createElement('h3');
-    title.textContent = 'เลือกสไตล์ภาพ';
+    title.textContent = 'ก่อนสร้างภาพ';
     const hint = document.createElement('div');
     hint.className = 'pxi-hint';
-    hint.textContent = `โหมด ${DEFAULT_TEMPLATES[mode]?.label || mode} • สไตล์จะถูกส่งไปให้ Connection 1 เขียน prompt`;
+    hint.textContent = `โหมด ${DEFAULT_TEMPLATES[mode]?.label || mode} — ค่าที่เลือกจะถูกส่งไปกับ prompt`;
+    root.append(title, hint);
 
-    const select = document.createElement('select');
-    select.className = 'text_pole';
-    for (const key of GPT_STYLE_ORDER) {
-        const preset = GPT_STYLE_PRESETS[key];
-        if (!preset) continue;
-        const option = document.createElement('option');
-        option.value = key;
-        option.textContent = preset.label;
-        select.append(option);
+    const addLabel = (text) => {
+        const label = document.createElement('div');
+        label.className = 'pxi-stylebox-label';
+        label.textContent = text;
+        root.append(label);
+    };
+
+    let vibeSelect = null;
+    if (wantVibe) {
+        addLabel('Vibe (ชุดแท็กที่บันทึกไว้)');
+        vibeSelect = document.createElement('select');
+        vibeSelect.className = 'text_pole';
+        const none = document.createElement('option');
+        none.value = 'none';
+        none.textContent = '⟨ไม่ใช้ vibe⟩';
+        vibeSelect.append(none);
+        for (const vibe of s.vibes) {
+            const option = document.createElement('option');
+            option.value = vibe.id;
+            option.textContent = vibe.name;
+            vibeSelect.append(option);
+        }
+        vibeSelect.value = s.vibe_active || 'none';
+        root.append(vibeSelect);
     }
-    if (String(s.gpt_style_custom || '').trim()) {
-        const option = document.createElement('option');
-        option.value = 'custom';
-        option.textContent = 'กำหนดเอง (ตามที่เขียนไว้ในหมวด ②)';
-        select.append(option);
+
+    let styleSelect = null;
+    if (wantStyle) {
+        addLabel('สไตล์ภาพ');
+        styleSelect = document.createElement('select');
+        styleSelect.className = 'text_pole';
+        for (const key of GPT_STYLE_ORDER) {
+            const option = document.createElement('option');
+            option.value = key;
+            option.textContent = GPT_STYLE_PRESETS[key].label;
+            styleSelect.append(option);
+        }
+        if (String(s.gpt_style_custom || '').trim()) {
+            const option = document.createElement('option');
+            option.value = 'custom';
+            option.textContent = 'กำหนดเอง (ตามที่เขียนไว้ในหมวด ⑤)';
+            styleSelect.append(option);
+        }
+        styleSelect.value = styleKeyFor(mode);
+        root.append(styleSelect);
     }
-    select.value = styleKeyFor(mode);
+
+    let mangaSelect = null;
+    if (wantManga) {
+        addLabel('หน้าการ์ตูนแบบไหน');
+        mangaSelect = document.createElement('select');
+        mangaSelect.className = 'text_pole';
+        for (const key of MANGA_STYLE_ORDER) {
+            const option = document.createElement('option');
+            option.value = key;
+            option.textContent = MANGA_STYLE_PRESETS[key].label;
+            mangaSelect.append(option);
+        }
+        mangaSelect.value = mangaStyleKey();
+        root.append(mangaSelect);
+    }
 
     const rememberLabel = document.createElement('label');
     rememberLabel.className = 'checkbox_label';
     const remember = document.createElement('input');
     remember.type = 'checkbox';
     const rememberText = document.createElement('span');
-    rememberText.textContent = 'จำสไตล์นี้ไว้ ไม่ต้องถามอีก (ยกเลิกได้ที่หมวด ⑤)';
+    rememberText.textContent = 'จำค่าเหล่านี้ไว้ ไม่ต้องถามอีก (ยกเลิกได้ที่หมวด ⑤)';
     rememberLabel.append(remember, rememberText);
-
-    root.append(title, hint, select, rememberLabel);
+    root.append(rememberLabel);
 
     const ok = await context.callGenericPopup(root, context.POPUP_TYPE.CONFIRM, '', {
         okButton: 'สร้างภาพ',
@@ -1748,69 +1837,34 @@ async function askStyle(mode) {
     });
     if (!ok) return null;
 
-    const chosen = select.value;
+    const picked = {
+        vibe: vibeSelect ? vibeSelect.value : undefined,
+        style: styleSelect ? styleSelect.value : undefined,
+        manga: mangaSelect ? mangaSelect.value : undefined,
+    };
+
     if (remember.checked) {
-        s.remember_style = true;
-        if (s.style_per_mode) {
-            if (!s.gpt_style_modes || typeof s.gpt_style_modes !== 'object') s.gpt_style_modes = {};
-            s.gpt_style_modes[mode] = chosen;
-        } else {
-            s.gpt_style = chosen;
+        if (picked.vibe !== undefined) {
+            s.vibe_active = picked.vibe === 'none' ? '' : picked.vibe;
+            s.vibe_remember = true;
+        }
+        if (picked.style !== undefined) {
+            s.remember_style = true;
+            if (s.style_per_mode) {
+                if (!s.gpt_style_modes || typeof s.gpt_style_modes !== 'object') s.gpt_style_modes = {};
+                s.gpt_style_modes[mode] = picked.style;
+            } else {
+                s.gpt_style = picked.style;
+            }
+        }
+        if (picked.manga !== undefined) {
+            s.manga_style = picked.manga;
+            s.manga_style_remember = true;
         }
         loadSettingsToUi();
         context.saveSettingsDebounced();
     }
-    return chosen;
-}
-
-/** ถามสไตล์หน้าการ์ตูนก่อนเจน (ฝั่ง NovelAI/Diffusion) */
-async function askMangaStyle() {
-    const context = getContext();
-    const s = settings();
-
-    const root = document.createElement('div');
-    root.className = 'pxi-stylebox';
-
-    const title = document.createElement('h3');
-    title.textContent = 'หน้าการ์ตูนแบบไหน';
-    const hint = document.createElement('div');
-    hint.className = 'pxi-hint';
-    hint.textContent = 'จะถูกส่งไปพร้อม template ชุด Manga Panel ให้ Connection 1 เขียน prompt';
-
-    const select = document.createElement('select');
-    select.className = 'text_pole';
-    for (const key of MANGA_STYLE_ORDER) {
-        const option = document.createElement('option');
-        option.value = key;
-        option.textContent = MANGA_STYLE_PRESETS[key].label;
-        select.append(option);
-    }
-    select.value = mangaStyleKey();
-
-    const rememberLabel = document.createElement('label');
-    rememberLabel.className = 'checkbox_label';
-    const remember = document.createElement('input');
-    remember.type = 'checkbox';
-    const rememberText = document.createElement('span');
-    rememberText.textContent = 'จำไว้ ไม่ต้องถามอีก (ยกเลิกได้ที่หมวด ⑤)';
-    rememberLabel.append(remember, rememberText);
-
-    root.append(title, hint, select, rememberLabel);
-
-    const ok = await context.callGenericPopup(root, context.POPUP_TYPE.CONFIRM, '', {
-        okButton: 'สร้างภาพ',
-        cancelButton: 'ยกเลิก',
-    });
-    if (!ok) return null;
-
-    const chosen = select.value;
-    if (remember.checked) {
-        s.manga_style = chosen;
-        s.manga_style_remember = true;
-        loadSettingsToUi();
-        context.saveSettingsDebounced();
-    }
-    return chosen;
+    return picked;
 }
 
 async function runPipeline({ mode = 'free', rawPrompt = '', extra = '', quiet = false } = {}) {
@@ -1828,19 +1882,15 @@ async function runPipeline({ mode = 'free', rawPrompt = '', extra = '', quiet = 
         lastAnalysis = '';
         runStyleOverride = '';
         runMangaOverride = '';
+        runVibeOverride = null;
 
-        if (fromStage1 && mode === 'manga' && !paramsAreGpt() && !s.manga_style_remember) {
+        if (fromStage1) {
             setProgress('style');
-            const chosen = await askMangaStyle();
-            if (!chosen) { setStatus('ยกเลิกแล้ว'); return null; }
-            runMangaOverride = chosen;
-        }
-
-        if (fromStage1 && paramsAreGpt() && !s.remember_style) {
-            setProgress('style');
-            const chosen = await askStyle(mode);
-            if (!chosen) { setStatus('ยกเลิกแล้ว'); return null; }
-            runStyleOverride = chosen;
+            const picked = await askBeforeGenerate(mode);
+            if (!picked) { setStatus('ยกเลิกแล้ว'); return null; }
+            if (picked.vibe !== undefined) runVibeOverride = picked.vibe;
+            if (picked.style !== undefined) runStyleOverride = picked.style;
+            if (picked.manga !== undefined) runMangaOverride = picked.manga;
         }
 
         if (fromStage1) {
@@ -1878,6 +1928,7 @@ async function runPipeline({ mode = 'free', rawPrompt = '', extra = '', quiet = 
         isBusy = false;
         runStyleOverride = '';
         runMangaOverride = '';
+        runVibeOverride = null;
         userAborted = false;
         releaseWakeLock();
         setTimeout(() => setProgress(null), 900);
@@ -2436,8 +2487,9 @@ async function showDoc(doc) {
 function renderDocsButtons() {
     const container = document.getElementById('pxi_docs_list');
     if (!container) return;
+    const engine = settings().docs_engine === 'gpt' ? 'gpt' : 'nai';
     container.innerHTML = '';
-    for (const doc of NAI_DOCS) {
+    for (const doc of NAI_DOCS.filter(d => d.engine === engine)) {
         const button = document.createElement('div');
         button.className = 'menu_button menu_button_icon pxi-doc-button';
         button.innerHTML = `<i class="fa-solid ${doc.icon}"></i><span></span>`;
@@ -2616,6 +2668,107 @@ async function fetchRemoteModelList({ silent = false } = {}) {
         if (!silent) await showErrorPopup(error);
         return false;
     }
+}
+
+function populateVibes() {
+    const select = document.getElementById('pxi_vibe_select');
+    if (!select) return;
+    const s = settings();
+    select.innerHTML = '';
+
+    const none = document.createElement('option');
+    none.value = '';
+    none.textContent = (s.vibes || []).length ? '⟨ไม่ใช้ vibe⟩' : '⟨ยังไม่มี vibe⟩';
+    select.append(none);
+    for (const vibe of s.vibes || []) {
+        const option = document.createElement('option');
+        option.value = vibe.id;
+        option.textContent = vibe.name;
+        select.append(option);
+    }
+    select.value = (s.vibes || []).some(v => v.id === s.vibe_active) ? s.vibe_active : '';
+    loadVibeEditor();
+}
+
+function loadVibeEditor() {
+    const s = settings();
+    const id = document.getElementById('pxi_vibe_select')?.value || '';
+    const vibe = (s.vibes || []).find(v => v.id === id);
+    const name = document.getElementById('pxi_vibe_name');
+    const tags = document.getElementById('pxi_vibe_tags');
+    const note = document.getElementById('pxi_vibe_note');
+    if (name) name.value = vibe?.name || '';
+    if (tags) tags.value = vibe?.tags || '';
+    if (note) note.value = vibe?.note || '';
+    document.getElementById('pxi_vibe_delete')?.classList.toggle('pxi-hidden', !vibe);
+}
+
+/** id ที่ไม่มีทางชนกัน แม้กดสร้างรัว ๆ ในมิลลิวินาทีเดียวกัน */
+function newVibeId(existing) {
+    const taken = new Set((existing || []).map(v => v.id));
+    let id;
+    do {
+        id = `vibe_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`;
+    } while (taken.has(id));
+    return id;
+}
+
+function saveVibe() {
+    const context = getContext();
+    const s = settings();
+    const select = document.getElementById('pxi_vibe_select');
+    const name = String(document.getElementById('pxi_vibe_name')?.value || '').trim();
+    const tags = String(document.getElementById('pxi_vibe_tags')?.value || '').trim();
+    const note = String(document.getElementById('pxi_vibe_note')?.value || '').trim();
+
+    if (!name) { notify('ตั้งชื่อ vibe ก่อน', 'warning'); return; }
+    if (!tags) { notify('ใส่แท็กหรือคำบรรยายของ vibe ก่อน', 'warning'); return; }
+
+    const id = select?.value || '';
+    const existing = (s.vibes || []).find(v => v.id === id);
+    if (existing) {
+        existing.name = name;
+        existing.tags = tags;
+        existing.note = note;
+        notify(`บันทึก vibe "${name}" แล้ว`, 'success');
+    } else {
+        const fresh = { id: newVibeId(s.vibes), name, tags, note };
+        s.vibes.push(fresh);
+        s.vibe_active = fresh.id;
+        notify(`เพิ่ม vibe "${name}" แล้ว`, 'success');
+    }
+    populateVibes();
+    if (select && !existing) select.value = s.vibe_active;
+    loadVibeEditor();
+    context.saveSettingsDebounced();
+}
+
+async function deleteVibe() {
+    const context = getContext();
+    const s = settings();
+    const id = document.getElementById('pxi_vibe_select')?.value || '';
+    const vibe = (s.vibes || []).find(v => v.id === id);
+    if (!vibe) return;
+    const ok = await context.callGenericPopup(`ลบ vibe "${vibe.name}" ?`, context.POPUP_TYPE.CONFIRM, '', { okButton: 'ลบ', cancelButton: 'ยกเลิก' });
+    if (!ok) return;
+    s.vibes = s.vibes.filter(v => v.id !== id);
+    if (s.vibe_active === id) s.vibe_active = '';
+    populateVibes();
+    context.saveSettingsDebounced();
+    notify('ลบแล้ว', 'success');
+}
+
+function newVibe() {
+    const select = document.getElementById('pxi_vibe_select');
+    if (select) select.value = '';
+    const name = document.getElementById('pxi_vibe_name');
+    const tags = document.getElementById('pxi_vibe_tags');
+    const note = document.getElementById('pxi_vibe_note');
+    if (name) name.value = '';
+    if (tags) tags.value = '';
+    if (note) note.value = '';
+    document.getElementById('pxi_vibe_delete')?.classList.add('pxi-hidden');
+    name?.focus?.();
 }
 
 function populateMangaStyles() {
@@ -2869,6 +3022,7 @@ function loadSettingsToUi() {
     toggleSourceBlocks();
     populateSizePresets();
     populateNaiModels();
+    populateVibes();
     populateMangaStyles();
     populateGptStyles();
     populateImageModels();
@@ -2921,6 +3075,7 @@ function bindEvents() {
             if (key === 'tpl_engine') { populateGptStyles(); loadTemplateEditor(); }
             if (key === 'param_engine') toggleSourceBlocks();
             if (key === 'gpt_style') toggleSourceBlocks();
+            if (key === 'docs_engine') renderDocsButtons();
             if (key === 'c1_source') setC1State('ยังไม่ได้เชื่อมต่อ — กรอกค่าด้านล่างแล้วกด "เชื่อมต่อ"');
             context.saveSettingsDebounced();
         });
@@ -2955,6 +3110,14 @@ function bindEvents() {
         setC2State(`เลือกโมเดล ${value} แล้ว`, 'ok');
     });
     document.getElementById('pxi_nai_save')?.addEventListener('click', () => saveNovelKey());
+    document.getElementById('pxi_vibe_select')?.addEventListener('change', (event) => {
+        settings().vibe_active = event.target.value;
+        loadVibeEditor();
+        getContext().saveSettingsDebounced();
+    });
+    document.getElementById('pxi_vibe_save')?.addEventListener('click', () => saveVibe());
+    document.getElementById('pxi_vibe_new')?.addEventListener('click', () => newVibe());
+    document.getElementById('pxi_vibe_delete')?.addEventListener('click', () => deleteVibe());
     document.getElementById('pxi_model_list_fetch')?.addEventListener('click', () => fetchRemoteModelList());
     document.getElementById('pxi_nai_model')?.addEventListener('change', () => populateNaiModels());
     document.getElementById('pxi_size_save')?.addEventListener('click', () => applySizeFromField());
@@ -2973,7 +3136,10 @@ function bindEvents() {
     document.getElementById('pxi_profile_refresh')?.addEventListener('click', () => populateProfiles());
     document.getElementById('pxi_persona_refresh')?.addEventListener('click', () => updatePersonaHint());
     document.getElementById('pxi_preview')?.addEventListener('click', () => previewPrompt());
-    document.getElementById('pxi_docs_save_all')?.addEventListener('click', () => downloadText('novelai-cheatsheet.md', docsToMarkdown()));
+    document.getElementById('pxi_docs_save_all')?.addEventListener('click', () => {
+        const engine = settings().docs_engine === 'gpt' ? 'gpt' : 'nai';
+        downloadText(`${engine === 'gpt' ? 'gpt-image' : 'novelai'}-cheatsheet.md`, docsToMarkdown(engine));
+    });
     document.getElementById('pxi_nai_recommended')?.addEventListener('click', () => applyRecommended());
 
     for (const mode of MODES) {
