@@ -333,6 +333,13 @@
                             <option value="url">url</option>
                             <option value="">(ไม่ส่งฟิลด์นี้)</option>
                         </select>
+                        <label class="checkbox_label" for="pxi_img_fallback">
+                            <input id="pxi_img_fallback" type="checkbox">
+                            <span>ลองรูปแบบคำขออื่นอัตโนมัติเมื่อยิงไม่ผ่าน <small class="pxi-hint pxi-inline">(แนะนำให้เปิดไว้)</small></span>
+                        </label>
+                        <small class="pxi-hint">เริ่มจาก <code>/v1/images/generations</code> ตามมาตรฐาน ถ้าไม่ผ่านจะไล่ลอง response_format แบบ object แล้วสลับไป <code>/chat/completions</code> ให้เอง เจอเส้นทางที่ใช้ได้แล้วจะจำไว้ใช้เป็นหลักต่อไป</small></span>
+                        </label>
+                        <small class="pxi-hint">ร้านที่เขียนด้วย Go บางเจ้าประกาศฟิลด์นี้เป็น object ถ้าส่งเป็นข้อความจะได้ HTTP 500 กลับมา</small>
                     </div>
 
                 </div>

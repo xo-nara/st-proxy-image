@@ -98,6 +98,36 @@ Connection Profile ของ ST                NovelAI Official
 ```
 ใส่ `suffix` กับ `negative` มาด้วยได้ ปุ่ม "ใส่ค่าที่ NovelAI แนะนำ" จะหยิบไปใช้กับโมเดลนั้นให้เอง • ติ๊กให้ดึงอัตโนมัติตอนเปิด ST ได้
 
+## Anlas — อะไรทำให้เสียเงิน
+ติ๊ก **Avoid spending Anlas** มีผลกับ **ทั้งสองเส้นทาง** แล้ว (NovelAI Official ผ่านเซิร์ฟเวอร์ ST และ Custom proxy) เดิมมีผลเฉพาะเส้นทางแรก
+บรรทัดใต้ช่องขนาดภาพจะเตือนล่วงหน้าว่าอะไรจะกิน Anlas ตามค่าที่ตั้งไว้ตอนนี้ — Upscale > 1, n > 1, ขนาดเกิน 1024x1024, steps เกิน 28 และข้อควรระวังเรื่อง V5
+
+**ถ้าเจอ 402 Not enough Anlas** แปลว่าคำขอไปถึง NovelAI แล้ว endpoint ใช้ได้ ปัญหาอยู่ที่บัญชีปลายทาง ไม่ใช่ที่ URL
+ลดค่าใช้จ่าย: Upscale = 1, ขนาดไม่เกิน 1024x1024, steps ไม่เกิน 28, เปิดติ๊ก Avoid spending Anlas
+ถ้าลดหมดแล้วยังไม่ผ่าน ต้องเติม Anlas ที่บัญชี NovelAI ฝั่ง proxy
+
+## NovelAI V5
+- โมเดล `nai-diffusion-5-full` (ค่าเริ่มต้นใหม่) และ `nai-diffusion-5-curated`
+- ปุ่ม "ใส่ค่าที่ NovelAI แนะนำ" ตั้ง suffix/negative ชุดของ V5 ให้อัตโนมัติ
+- เทมเพลตทุกโหมดรู้จักแท็กใหม่: complexity 4 ระดับ, `depthness`, `meta:novel era` / `meta:golden era`, กลุ่ม visual novel, แท็กตัดพื้นหลัง, `attractive male`
+- โหมด Manga Panel เขียนใหม่ให้ใช้ความสามารถหน้าหลายช่องในรอบเดียวของ V5 และรองรับตัวหนังสือเมื่อสั่งผ่าน Extra instruction (ค่าเริ่มต้นยังเป็นหน้าไร้คำพูด)
+- Cheatsheet มีหัวข้อ "NovelAI V5 (อัปเดตใหม่)" เป็นหัวข้อแรกฝั่ง NovelAI
+
+## เมื่อ proxy ไม่รับ payload มาตรฐาน
+หมวด ④ มีติ๊กเดียว: **ลองรูปแบบคำขออื่นอัตโนมัติเมื่อยิงไม่ผ่าน** (เปิดไว้เป็นค่าเริ่มต้น)
+
+ระบบจะไล่ลองตามลำดับนี้จนกว่าจะสำเร็จ
+1. `/v1/images/generations` + `response_format` เป็นข้อความ (มาตรฐาน)
+2. `/v1/images/generations` + `response_format` เป็น object
+3. `/chat/completions` + `response_format` เป็น object
+4. `/chat/completions` + `response_format` เป็นข้อความ
+5. `/chat/completions` ไม่ส่ง `response_format`
+
+เจอเส้นทางที่ใช้ได้แล้วจะจำไว้และลองอันนั้นก่อนเสมอในครั้งถัดไป ถ้าลองครบแล้วยังไม่ผ่านจะแนะนำให้กดปุ่ม "ค้นหา endpoint"
+ปลดติ๊ก = ยิงเฉพาะแบบมาตรฐานอย่างเดียว
+
+ระบบอ่านรูปจากคำตอบทรง chat ได้ด้วย ทั้ง data URL, markdown image และ URL เปล่า
+
 ## NovelAI Official
 กรอกคีย์แล้วกดบันทึก — คีย์ถูกเก็บในช่อง NovelAI ของ SillyTavern เอง (`api_key_novel`) ไม่ได้เก็บในไฟล์ตั้งค่าของ extension
 คำขอวิ่งผ่าน `/api/novelai/generate-image` ของเซิร์ฟเวอร์ ST จึงไม่ติด CORS

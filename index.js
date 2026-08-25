@@ -35,6 +35,8 @@ const RATING_RULE = `Rating: prepend "rating:general" for a safe scene, "rating:
 
 const ORDER_RULE = 'Tag order: subject count tags first, then character identity and appearance, then clothing, then expression and pose, then action, then camera framing, then setting, background, lighting and mood. Pick exactly one framing tag - never combine conflicting ones such as full body and close-up.';
 
+const V5_RULE = `NovelAI V5 tags - use these only when they genuinely fit, never all at once:\n- Detail level: 'low complexity', 'medium complexity', 'high complexity', 'ultra complexity'. Higher levels add scenery, props and background characters; lower levels keep the frame clean. Pick exactly one.\n- 'depthness' separates foreground from background. Good for scenes with real space, unnecessary for a plain portrait.\n- Era tags steer the drawing period: 'meta:novel era' for a modern light-novel look, 'meta:golden era' for a classic anime look. One at most.\n- Visual-novel framing: 'visual novel art', 'visual novel cg', 'visual novel bg', 'visual novel sprite', 'visual novel chibi'.\n- Cut-outs: 'transparent background', 'has alpha', 'alpha transparency' give a subject with no background. Use them only when a cut-out is actually wanted, and never alongside a described location.\n- 'attractive male' improves male character rendering when the subject is a man.\nV5 reads plain English alongside tags, so a short clause is fine where no tag exists. Keep the output mostly tags anyway.`;
+
 const RENAMED_RULE = 'Renamed tags: write "peace sign" not "v", "double peace" not "double v", "neutral face" not ":|", "square bikini" not "eyepatch bikini".';
 
 const DENSITY_RULE = 'Emphasis is numeric: "1.2::tag, tag ::" always closed by a bare "::". Use it in 2 or 3 spots at most - raise the focus of the moment to 1.15-1.3, lower distracting background detail to 0.7-0.9, and use "-1::tag ::" to remove something a character normally wears when the scene says it is gone. Never use the Stable Diffusion form (tag:1.2), never use BREAK, never use the "|" character, and never wrap tags in [ ] or { } - in NovelAI those change the weight instead of grouping.';
@@ -52,19 +54,19 @@ const DEFAULT_TEMPLATES = {
     },
     portrait: {
         label: 'Portrait (ตัวละคร)',
-        sys: `You write image prompts for NovelAI Diffusion V4.5 (anime model).\nWrite ONE solo portrait prompt of the CHARACTER as they appear in the latest message.\n\nSource priority:\n- The latest message is the PRIMARY source. Take the outfit worn right now, hair up or down, wet, dirty or damaged states, expression, gaze, pose, and the place they are in from it.\n- The character sheet is the FALLBACK for fixed traits only: gender, build, height, hair colour and length, eye colour, permanent marks. Use it whenever the scene does not mention something.\n- When the two conflict on anything temporary (clothes, hairstyle, mood, location), the latest message wins.\n- If the scene gives no clothing, fall back to the sheet.\n\nStart with the count tag (1girl / 1boy / 1other) and solo, then the identity tags, then hair, eyes, height and build, distinctive features, the current outfit, expression and gaze, pose, framing (upper body or cowboy shot), background, lighting.\n\n${IDENTITY_RULE} A costume variant tag may be used only when the scene actually describes that outfit.\n\n${BACKGROUND_RULE}\n\nGive the character an absolute build tag such as "tall", "petite" or "slender" - without one the model draws an average build.\n\n${ORDER_RULE}\n${RENAMED_RULE}\n${DENSITY_RULE}\n${RATING_RULE}\n\n${STYLE_TAIL}\n\nDraw only this one character and only what the moment shows: no second person, no past events, no dialogue text. Do not use source#, target# or mutual# tags.\n25-40 tags.\n${NAI_RULES}`,
+        sys: `You write image prompts for NovelAI Diffusion V4.5 (anime model).\nWrite ONE solo portrait prompt of the CHARACTER as they appear in the latest message.\n\nSource priority:\n- The latest message is the PRIMARY source. Take the outfit worn right now, hair up or down, wet, dirty or damaged states, expression, gaze, pose, and the place they are in from it.\n- The character sheet is the FALLBACK for fixed traits only: gender, build, height, hair colour and length, eye colour, permanent marks. Use it whenever the scene does not mention something.\n- When the two conflict on anything temporary (clothes, hairstyle, mood, location), the latest message wins.\n- If the scene gives no clothing, fall back to the sheet.\n\nStart with the count tag (1girl / 1boy / 1other) and solo, then the identity tags, then hair, eyes, height and build, distinctive features, the current outfit, expression and gaze, pose, framing (upper body or cowboy shot), background, lighting.\n\n${IDENTITY_RULE} A costume variant tag may be used only when the scene actually describes that outfit.\n\n${BACKGROUND_RULE}\n\nGive the character an absolute build tag such as "tall", "petite" or "slender" - without one the model draws an average build.\n\n${ORDER_RULE}\n${RENAMED_RULE}\n${V5_RULE}\n${DENSITY_RULE}\n${RATING_RULE}\n\n${STYLE_TAIL}\n\nDraw only this one character and only what the moment shows: no second person, no past events, no dialogue text. Do not use source#, target# or mutual# tags.\n25-40 tags.\n${NAI_RULES}`,
     },
     selfie: {
         label: 'Selfie (โคลสอัพหน้า {{char}})',
-        sys: `You write image prompts for NovelAI Diffusion V4.5 (anime model).\nWrite ONE close-up face shot of the CHARACTER, as if it were a selfie taken right now.\nAlways include, in this order:\n1. Count tag (1girl / 1boy / 1other), solo, then the character identity tags.\n2. Framing that keeps it head-to-neck: portrait, close-up, face focus. Never add tags for torso, hands, legs, breasts or full body.\n3. Face detail: hair colour and style around the face, hair ornaments, eye colour, blush, sweat or tears if present.\n4. Expression from the current scene plus gaze direction (looking at viewer / looking away).\n5. Collar-level clothing only: shirt collar, choker, scarf and the like.\n6. Background of the place they are in right now, plus lighting, and depth of field or blurry background.\n\n${BACKGROUND_RULE}\n\n${IDENTITY_RULE}\n${RENAMED_RULE}\n${DENSITY_RULE}\nPut the face emphasis to work, for example "1.2::face focus, looking at viewer ::" and weaken the background with something like "0.8::blurry background ::".\n${RATING_RULE}\n\n${STYLE_TAIL}\n\n20-32 tags.\nDo not use source#, target# or mutual# tags: this is a solo close-up.\n${NAI_RULES}`,
+        sys: `You write image prompts for NovelAI Diffusion V4.5 (anime model).\nWrite ONE close-up face shot of the CHARACTER, as if it were a selfie taken right now.\nAlways include, in this order:\n1. Count tag (1girl / 1boy / 1other), solo, then the character identity tags.\n2. Framing that keeps it head-to-neck: portrait, close-up, face focus. Never add tags for torso, hands, legs, breasts or full body.\n3. Face detail: hair colour and style around the face, hair ornaments, eye colour, blush, sweat or tears if present.\n4. Expression from the current scene plus gaze direction (looking at viewer / looking away).\n5. Collar-level clothing only: shirt collar, choker, scarf and the like.\n6. Background of the place they are in right now, plus lighting, and depth of field or blurry background.\n\n${BACKGROUND_RULE}\n\n${IDENTITY_RULE}\n${RENAMED_RULE}\n${V5_RULE}\n${DENSITY_RULE}\nPut the face emphasis to work, for example "1.2::face focus, looking at viewer ::" and weaken the background with something like "0.8::blurry background ::".\n${RATING_RULE}\n\n${STYLE_TAIL}\n\n20-32 tags.\nDo not use source#, target# or mutual# tags: this is a solo close-up.\n${NAI_RULES}`,
     },
     user: {
         label: 'User (ตัวละครฝั่งผู้ใช้)',
-        sys: `You write image prompts for NovelAI Diffusion V4.5 (anime model).\nWrite ONE solo prompt of the USER's character as they are in the latest message.\n\nTwo sources are given and they have different jobs:\n- The persona block holds the FIXED traits: gender, body type, height, build, hair colour and length, eye colour, permanent marks. Take these from the persona unless the scene explicitly changed them.\n- The latest message holds the CURRENT state and it decides everything temporary. Read it for: what they are wearing right now, hair put up or let down, wet, dirty or damaged states, expression and gaze, POSTURE AND POSE (standing, sitting, kneeling, lying, leaning, walking, arms crossed, hands behind back, what they are holding or touching), and the PLACE they are in with its furniture, time of day, weather and lighting. When the scene contradicts the persona on something temporary, the scene wins.\n- Take the pose and the background from the character's FINAL position in the message, not where they started.\n- Only when the latest message says nothing about clothing or pose, fall back to the persona and pick a neutral pose.\n\n${BACKGROUND_RULE}\n\nSolo image: draw only the user's character. If the other character is touching them in the scene, keep the effect on the user's own body - a blush, dishevelled clothes, an outstretched arm - but do not draw the second person and do not use source#, target# or mutual# tags.\n\nStart with the count tag (1girl / 1boy / 1other) and solo, then identity and appearance, then height and build, clothing, expression and gaze, posture and pose, framing (upper body or cowboy shot; use full body when the pose is the point), background, lighting.\n${IDENTITY_RULE}\n\nGive the character an absolute build tag such as "tall", "petite" or "slender" - without one the model draws an average build.\n\n${ORDER_RULE}\n${RENAMED_RULE}\n${DENSITY_RULE}\n${RATING_RULE}\n\n${STYLE_TAIL}\nMatch the franchise style to the world the scene takes place in, so the user's character sits in the same art style as the character they are with.\n\n25-40 tags.\n${NAI_RULES}`,
+        sys: `You write image prompts for NovelAI Diffusion V4.5 (anime model).\nWrite ONE solo prompt of the USER's character as they are in the latest message.\n\nTwo sources are given and they have different jobs:\n- The persona block holds the FIXED traits: gender, body type, height, build, hair colour and length, eye colour, permanent marks. Take these from the persona unless the scene explicitly changed them.\n- The latest message holds the CURRENT state and it decides everything temporary. Read it for: what they are wearing right now, hair put up or let down, wet, dirty or damaged states, expression and gaze, POSTURE AND POSE (standing, sitting, kneeling, lying, leaning, walking, arms crossed, hands behind back, what they are holding or touching), and the PLACE they are in with its furniture, time of day, weather and lighting. When the scene contradicts the persona on something temporary, the scene wins.\n- Take the pose and the background from the character's FINAL position in the message, not where they started.\n- Only when the latest message says nothing about clothing or pose, fall back to the persona and pick a neutral pose.\n\n${BACKGROUND_RULE}\n\nSolo image: draw only the user's character. If the other character is touching them in the scene, keep the effect on the user's own body - a blush, dishevelled clothes, an outstretched arm - but do not draw the second person and do not use source#, target# or mutual# tags.\n\nStart with the count tag (1girl / 1boy / 1other) and solo, then identity and appearance, then height and build, clothing, expression and gaze, posture and pose, framing (upper body or cowboy shot; use full body when the pose is the point), background, lighting.\n${IDENTITY_RULE}\n\nGive the character an absolute build tag such as "tall", "petite" or "slender" - without one the model draws an average build.\n\n${ORDER_RULE}\n${RENAMED_RULE}\n${V5_RULE}\n${DENSITY_RULE}\n${RATING_RULE}\n\n${STYLE_TAIL}\nMatch the franchise style to the world the scene takes place in, so the user's character sits in the same art style as the character they are with.\n\n25-40 tags.\n${NAI_RULES}`,
     },
     manga: {
         label: 'Manga Panel (แบ่งช่อง)',
-        sys: `You write image prompts for NovelAI Diffusion V4.5 (anime model).\nTurn the recent scene into ONE comic page made of separate panels - a sequence of moments, not a single illustration.\n\n=== STEP 1: PICK THE BEATS ===\nRead the scene and choose 2-4 moments that actually move the story, in the order they happen. Skip anything that would look identical to the panel before it.\nA reliable shape when the scene is short: establishing shot, then the reaction, then the action itself, then the aftermath.\nOne beat per panel. A panel is a single instant, not a summary.\n\n=== STEP 2: PAGE HEADER - ALWAYS FIRST ===\nOpen the prompt with the page tags in this order:\n1. "comic, silent comic, multiple views, panel layout, borders" - "silent comic" is the danbooru tag for a wordless page and does the heaviest lifting for keeping text out.\n2. The panel count, exactly one of: "4koma" (four equal panels stacked vertically - by far the most reliable), "2koma", "3koma", or "6 panels" for a denser page. Never combine two count tags.\n3. The total cast across the whole page as count tags: 1girl / 2girls / 1girl, 1boy ...\n4. "no text, textless" as a safety net.\nNever put a single-image framing tag such as "cowboy shot" or "close-up" in the header - framing belongs to individual panels. Putting it here collapses the page into one picture with decorative borders.\n\n=== STEP 3: ONE GROUP PER PANEL ===\nWrite each panel as its own numeric-emphasis group so the model keeps them apart:\n   "1.05::panel 1, <framing>, <character tags>, <expression>, <pose or action>, <background> ::"\nRules:\n- Number them "panel 1", "panel 2" and so on in reading order, and close every group with a bare "::".\n- Give every panel its own framing tag and vary it across the page: close-up, upper body, full body, wide shot, from above, from behind, pov, from side. A page where every panel is the same shot reads flat.\n- Repeat each character's identity and key appearance tags inside every panel they appear in. The model does not carry a character from one panel to the next on its own.\n- Keep each panel to 6-12 tags.\n- If a panel has no people in it - a hand, an object, a doorway, the sky - say so with "no humans" inside that group. Cutaway panels like this make a page feel like real manga.\n\n=== STEP 4: WHAT NOT TO DO ===\n- No speech bubbles, no captions, no sound effects, no signage, no lettering of any kind. Never write those as positive tags. Tell the story through expression, posture and framing alone.\n- Do not describe the same moment twice in different panels.\n- Do not let one character's tags spill into another panel's group.\n\n${IDENTITY_RULE}\n${RENAMED_RULE}\n${DENSITY_RULE}\n${RATING_RULE}\n\nThe page look is given separately in the input - follow it exactly and do not add colour tags that contradict it.\nClose with: masterpiece, very aesthetic, absurdres, best quality\n40-60 tags total.\n${NAI_RULES}`,
+        sys: `You write image prompts for NovelAI Diffusion V5 (anime model).\nTurn the recent scene into ONE comic page made of separate panels - a sequence of moments, not a single illustration.\nV5 lays out multi-panel pages in a single generation and follows plain English about layout, so describe the page plainly and let the tags carry the detail.\n\n=== STEP 1: PICK THE BEATS ===\nChoose 2-4 moments that actually move the story, in the order they happen. Skip anything that would look identical to the panel before it.\nA reliable shape when the scene is short: establishing shot, then the reaction, then the action itself, then the aftermath.\nOne beat per panel. A panel is a single instant, not a summary.\n\n=== STEP 2: PAGE HEADER - ALWAYS FIRST ===\nOpen with the page tags in this order:\n1. 'comic, multiple views, panel layout, borders' - and add 'silent comic' when the page carries no writing at all.\n2. The panel count, exactly one of: '4koma' (four equal panels stacked vertically, the most reliable), '2koma', '3koma', or '6 panels' for a denser page. Never combine two count tags.\n3. The total cast across the whole page as count tags: 1girl / 2girls / 1girl, 1boy ...\n4. A complexity tag for the whole page: 'high complexity' suits a busy page, 'medium complexity' a calm one.\nNever put a single-image framing tag such as cowboy shot or close-up in the header - framing belongs to individual panels, and putting it here collapses the page into one picture with decorative borders.\n\n=== STEP 3: ONE GROUP PER PANEL ===\nWrite each panel as its own numeric-emphasis group so the model keeps them apart:\n   '1.05::panel 1, <framing>, <character tags>, <expression>, <pose or action>, <background> ::'\nRules:\n- Number them 'panel 1', 'panel 2' and so on in reading order, and close every group with a bare '::'.\n- Give every panel its own framing tag and vary it across the page: close-up, upper body, full body, wide shot, from above, from behind, pov, from side. A page where every panel is the same shot reads flat.\n- Repeat each character's identity and key appearance tags inside every panel they appear in. The model does not carry a character from one panel to the next on its own.\n- Keep each panel to 6-12 tags.\n- If a panel has no people in it - a hand, an object, a doorway, the sky - say so with 'no humans' inside that group. Cutaway panels like this make a page feel like real manga.\n\n=== STEP 4: TEXT ON THE PAGE ===\nV5 renders lettering well, so text is allowed when the scene calls for it - but only when asked for explicitly.\n- Default is a wordless page: keep 'silent comic, no text, textless' and tell the story through expression, posture and framing alone.\n- If the Extra instruction asks for dialogue or sound effects, drop 'silent comic' and 'no text', add 'speech bubble', and put the exact words in double quotes so V5 renders them verbatim. Keep it to a few short lines.\n- Never invent dialogue that the scene does not contain.\n\n=== STEP 5: WHAT NOT TO DO ===\n- Do not describe the same moment twice in different panels.\n- Do not let one character's tags spill into another panel's group.\n- Do not add colour tags that contradict the page look given in the input.\n\n${IDENTITY_RULE}\n${RENAMED_RULE}\n${V5_RULE}\n${DENSITY_RULE}\n${RATING_RULE}\n\nThe page look is given separately in the input - follow it exactly.\nClose with: masterpiece, very aesthetic, absurdres, best quality\n40-60 tags total.\n${NAI_RULES}`,
     },
     last: {
         label: 'Last Message (ฉากล่าสุด)',
@@ -270,7 +272,7 @@ const defaultSettings = {
     c2_source: 'nai',
     param_engine: 'nai',
     tpl_engine: 'nai',
-    nai_model: 'nai-diffusion-4-5-full',
+    nai_model: 'nai-diffusion-5-full',
     nai_models_extra: [],
     model_list_url: '',
     model_list_auto: false,
@@ -304,6 +306,8 @@ const defaultSettings = {
     gpt_extra: '',
     gpt_templates: {},
     img_format: 'b64_json',
+    img_fallback: true,
+    img_route: '',
     img_timeout: 180,
 
     // Image parameters
@@ -388,6 +392,7 @@ const BINDINGS = [
     ['pxi_img_models_path', 'img_models_path', 'text'],
     ['pxi_img_model', 'img_model', 'text'],
     ['pxi_img_format', 'img_format', 'text'],
+    ['pxi_img_fallback', 'img_fallback', 'bool'],
     ['pxi_gpt_extra', 'gpt_extra', 'text'],
     ['pxi_img_timeout', 'img_timeout', 'number'],
     ['pxi_sampler', 'sampler', 'text'],
@@ -485,6 +490,9 @@ function initSettings() {
     if (!Array.isArray(s.img_models)) s.img_models = [];
     if (!['auto', 'path', 'exact'].includes(s.img_url_mode)) s.img_url_mode = 'auto';
     if (!['auto', 'path', 'exact'].includes(s.llm_url_mode)) s.llm_url_mode = 'auto';
+    if (typeof s.img_route !== 'string') s.img_route = '';
+    delete s.img_payload;
+    delete s.img_format_object;
     if (!s.gpt_templates || typeof s.gpt_templates !== 'object') s.gpt_templates = {};
     if (!GPT_STYLE_PRESETS[s.gpt_style]) s.gpt_style = 'realistic';
     if (!MANGA_STYLE_PRESETS[s.manga_style]) s.manga_style = 'mono';
@@ -1387,6 +1395,21 @@ function parseExtraBody() {
 }
 
 function extractImage(data) {
+    // คำตอบทรง chat completions: รูปมักฝังใน content เป็น data URL, markdown image หรือ URL เปล่า
+    const chatMessage = data?.choices?.[0]?.message;
+    if (chatMessage) {
+        const parts = Array.isArray(chatMessage.content) ? chatMessage.content : [chatMessage.content];
+        for (const part of parts) {
+            const text = typeof part === 'string' ? part : (part?.text || part?.image_url?.url || '');
+            const inline = String(text).match(/data:image\/[a-z+]+;base64,([A-Za-z0-9+/=]+)/i);
+            if (inline) return { kind: 'base64', value: inline[1] };
+            const md = String(text).match(/!?\[[^\]]*\]\((https?:\/\/[^)\s]+)\)/i);
+            if (md) return { kind: 'url', value: md[1] };
+            const bare = String(text).match(/(https?:\/\/\S+\.(?:png|jpe?g|webp)(?:\?\S*)?)/i);
+            if (bare) return { kind: 'url', value: bare[1] };
+        }
+    }
+
     const item = Array.isArray(data?.data) ? data.data[0] : null;
     const b64 = item?.b64_json
         || item?.image
@@ -1530,36 +1553,119 @@ async function stage2GptImage(prompt) {
     return extractImage(data);
 }
 
-async function stage2Custom(prompt) {
-    const s = settings();
+/** URL ของ endpoint แบบ chat สำหรับ proxy ที่ไม่เปิด images/generations */
+function chatFallbackUrl() {
     const url = resolveImageUrl('generate');
-    const { width, height } = parseSize();
-    console.log(LOG, 'custom image request', { url, width, height, model: s.img_model });
-    const body = {
-        prompt: composePrompt(prompt),
-        n: 1,
-        size: `${width}x${height}`,
-        width,
-        height,
-        sampler: s.sampler,
-        scheduler: s.scheduler,
-        steps: Number(s.steps) || 28,
-        scale: Number(s.scale) || 5,
-        cfg_scale: Number(s.scale) || 5,
-    };
+    const stripped = String(url).replace(/\/images\/(generations|generation)\/?$/i, '');
+    return stripped === url ? joinUrl(url, 'chat/completions') : joinUrl(stripped, 'chat/completions');
+}
+
+/**
+ * รูปแบบคำขอที่จะไล่ลอง เรียงจากมาตรฐานที่สุดไปหาที่แปลกที่สุด
+ * proxy แต่ละเจ้าไม่เหมือนกัน บางเจ้าไม่เปิด images/generations
+ * บางเจ้าเขียนด้วย Go แล้วประกาศ response_format เป็น object
+ */
+function customRouteVariants() {
+    return [
+        { id: 'images', label: 'images/generations', chat: false, formatObject: false },
+        { id: 'images-obj', label: 'images/generations + response_format object', chat: false, formatObject: true },
+        { id: 'chat-obj', label: 'chat/completions + response_format object', chat: true, formatObject: true },
+        { id: 'chat', label: 'chat/completions', chat: true, formatObject: false },
+        { id: 'chat-plain', label: 'chat/completions (ไม่ส่ง response_format)', chat: true, formatObject: false, noFormat: true },
+    ];
+}
+
+function buildCustomBody(variant, finalPrompt, width, height) {
+    const s = settings();
+    const body = variant.chat
+        ? { messages: [{ role: 'user', content: finalPrompt }], max_tokens: 16, width, height }
+        : { prompt: finalPrompt, n: 1, size: `${width}x${height}`, width, height };
+
+    if (!variant.chat) {
+        body.sampler = s.sampler;
+        body.scheduler = s.scheduler;
+        body.steps = resolvedSize().steps;
+        body.scale = Number(s.scale) || 5;
+        body.cfg_scale = Number(s.scale) || 5;
+        if (Number(s.upscale_ratio) > 1) body.upscale_ratio = Number(s.upscale_ratio);
+    }
     if (s.img_model) body.model = s.img_model;
-    if (s.img_format) body.response_format = s.img_format;
+    if (s.img_format && !variant.noFormat) {
+        body.response_format = variant.formatObject ? { type: s.img_format } : s.img_format;
+    }
     if (String(s.negative || '').trim()) body.negative_prompt = String(s.negative).trim();
     if (Number(s.seed) >= 0) body.seed = Number(s.seed);
-    if (Number(s.upscale_ratio) > 1) body.upscale_ratio = Number(s.upscale_ratio);
     Object.assign(body, parseExtraBody());
+    return body;
+}
 
+async function tryCustomRoute(variant, finalPrompt, width, height) {
+    const s = settings();
+    const url = variant.chat ? chatFallbackUrl() : resolveImageUrl('generate');
+    const body = buildCustomBody(variant, finalPrompt, width, height);
+    console.log(LOG, 'custom image request', { url, route: variant.id, width, height, model: s.img_model });
     const data = await requestJson(url, {
         method: 'POST',
         headers: authHeaders(s.img_key),
         body: JSON.stringify(body),
     }, s.img_timeout, '2');
     return extractImage(data);
+}
+
+async function stage2Custom(prompt) {
+    const s = settings();
+    // ใช้ resolvedSize เพื่อให้ติ๊ก "Avoid spending Anlas" มีผลกับเส้นทาง proxy ด้วย
+    const { width, height } = resolvedSize();
+    const finalPrompt = composePrompt(prompt);
+
+    let variants = customRouteVariants();
+    // ถ้าเคยเจอเส้นทางที่ใช้ได้แล้ว ให้ลองอันนั้นก่อนเสมอ
+    if (s.img_route) {
+        const remembered = variants.find(v => v.id === s.img_route);
+        if (remembered) variants = [remembered, ...variants.filter(v => v.id !== remembered.id)];
+    }
+    if (!s.img_fallback) variants = variants.slice(0, 1);
+
+    let lastError = null;
+    for (const variant of variants) {
+        try {
+            const image = await tryCustomRoute(variant, finalPrompt, width, height);
+            if (s.img_route !== variant.id) {
+                s.img_route = variant.id;
+                try { getContext().saveSettingsDebounced(); } catch { /* ignore */ }
+                if (variants.length > 1) {
+                    notify(`ใช้เส้นทาง ${variant.label} ได้ จะใช้อันนี้เป็นหลักต่อไป`, 'success');
+                    setC2State(`เส้นทางที่ใช้ได้: ${variant.label}`, 'ok');
+                }
+            }
+            return image;
+        } catch (error) {
+            lastError = error;
+            if (userAborted) throw error;
+            console.warn(LOG, `เส้นทาง ${variant.id} ไม่ผ่าน`, error?.message || error);
+        }
+    }
+
+    // 402/401/403 แปลว่าคำขอไปถึง NovelAI แล้ว ปัญหาอยู่ที่บัญชี ไม่ใช่ที่ endpoint
+    const reachedUpstream = /Anlas|statusCode\\?":\s*40[123]|not enough|unauthorized|forbidden/i.test(String(lastError?.raw || lastError?.message || ''));
+    if (lastError && s.img_fallback && !reachedUpstream) {
+        lastError.hints = [
+            'ลองครบทุกรูปแบบคำขอแล้วยังไม่ผ่าน — proxy เจ้านี้อาจไม่ได้เปิดบริการเจนรูปไว้จริง ๆ',
+            'กดปุ่ม "ค้นหา endpoint" เพื่อดูว่ามี path ไหนตอบกลับบ้าง',
+            ...(lastError.hints || []),
+        ];
+    }
+    if (lastError && reachedUpstream) {
+        const costs = anlasCostWarnings();
+        lastError.hints = [
+            'คำขอไปถึง NovelAI แล้ว — endpoint ใช้ได้ ปัญหาอยู่ที่บัญชีปลายทาง',
+            ...(costs.length ? ['สิ่งที่ทำให้ค่าใช้จ่ายสูงตามค่าที่ตั้งไว้ตอนนี้: ' + costs.join(' • ')] : []),
+            'ลดค่าใช้จ่าย: ตั้ง Upscale = 1, ขนาดไม่เกิน 1024x1024, steps ไม่เกิน 28, และเปิดติ๊ก "Avoid spending Anlas"',
+            'ถ้าลดหมดแล้วยังไม่ผ่าน ต้องเติม Anlas ที่บัญชี NovelAI ฝั่ง proxy',
+            ...(lastError.hints || []),
+        ];
+    }
+    throw lastError || new PxiError('เจนรูปไม่สำเร็จ', { stage: '2' });
 }
 
 async function stage2GenerateImage(prompt) {
@@ -2060,6 +2166,8 @@ async function saveNovelKey() {
 /** ชุดค่าที่ NovelAI แนะนำสำหรับโมเดลที่เลือกอยู่ */
 /** รายชื่อโมเดล NovelAI ที่มากับตัว extension — ผู้ใช้พิมพ์ชื่ออื่นเองได้เสมอ */
 const NAI_MODELS_BUILTIN = [
+    { id: 'nai-diffusion-5-full', label: 'NAI Diffusion V5 (Full)' },
+    { id: 'nai-diffusion-5-curated', label: 'NAI Diffusion V5 (Curated)' },
     { id: 'nai-diffusion-4-5-full', label: 'NAI Diffusion Anime V4.5 (Full)' },
     { id: 'nai-diffusion-4-5-curated', label: 'NAI Diffusion Anime V4.5 (Curated)' },
     { id: 'nai-diffusion-4-full', label: 'NAI Diffusion Anime V4 (Full)' },
@@ -2069,6 +2177,8 @@ const NAI_MODELS_BUILTIN = [
 ];
 
 const NAI_QUALITY_SUFFIX = {
+    'nai-diffusion-5-full': 'location, very aesthetic, masterpiece, high complexity, no text',
+    'nai-diffusion-5-curated': 'location, very aesthetic, masterpiece, high complexity, no text, rating:general',
     'nai-diffusion-4-5-full': 'location, very aesthetic, masterpiece, no text',
     'nai-diffusion-4-5-curated': 'location, masterpiece, no text, -0.8::feet::, rating:general',
     'nai-diffusion-4-full': 'no text, best quality, very aesthetic, absurdres',
@@ -2080,6 +2190,7 @@ const NAI_QUALITY_SUFFIX = {
 const NAI_REMOTE_NEGATIVE = {};
 
 const NAI_NEGATIVE = {
+    v5: 'lowres, artistic error, scan artifacts, worst quality, bad quality, jpeg artifacts, very displeasing, chromatic aberration, multiple views, logo, too many watermarks, negative space, blank page, bad anatomy, mismatched pupils',
     curated: 'blurry, lowres, upscaled, artistic error, film grain, scan artifacts, bad anatomy, bad hands, worst quality, bad quality, jpeg artifacts, very displeasing, chromatic aberration, halftone, multiple views, logo, too many watermarks, @_@, mismatched pupils, glowing eyes, negative space, blank page',
     full: 'lowres, artistic error, film grain, scan artifacts, worst quality, bad quality, jpeg artifacts, very displeasing, chromatic aberration, dithering, halftone, screentone, multiple views, logo, too many watermarks, negative space, blank page, @_@, mismatched pupils, glowing eyes, bad anatomy',
     v3: 'lowres, {bad}, error, fewer, extra, missing, worst quality, jpeg artifacts, bad quality, watermark, unfinished, displeasing, chromatic aberration, signature, extra digits, artistic error, username, scan, [abstract], bad anatomy, bad hands, @_@, mismatched pupils, heart-shaped pupils, glowing eyes',
@@ -2090,13 +2201,14 @@ function applyRecommended() {
     const s = settings();
     const model = s.nai_model || 'nai-diffusion-4-5-full';
     const isV3 = model.includes('-3');
+    const isV5 = /-5-(full|curated)/.test(model);
     const isCurated = model.includes('curated');
 
     // ขนาดภาพเป็นค่าเดียวที่ไม่แตะ ตามที่ผู้ใช้ตั้งไว้เอง
     s.prefix = '';
-    s.suffix = NAI_QUALITY_SUFFIX[model] || NAI_QUALITY_SUFFIX['nai-diffusion-4-5-full'];
+    s.suffix = NAI_QUALITY_SUFFIX[model] || NAI_QUALITY_SUFFIX['nai-diffusion-5-full'];
     s.negative = NAI_REMOTE_NEGATIVE[model]
-        || (isV3 ? NAI_NEGATIVE.v3 : (isCurated ? NAI_NEGATIVE.curated : NAI_NEGATIVE.full));
+        || (isV3 ? NAI_NEGATIVE.v3 : isV5 ? NAI_NEGATIVE.v5 : (isCurated ? NAI_NEGATIVE.curated : NAI_NEGATIVE.full));
     s.sampler = 'k_euler_ancestral';
     s.scheduler = 'karras';
     s.steps = 28;
@@ -2892,6 +3004,25 @@ function updateGptSizeHint() {
     }
 }
 
+/** สิ่งที่จะทำให้เสีย Anlas แน่ ๆ ตามค่าที่ตั้งไว้ตอนนี้ */
+function anlasCostWarnings() {
+    const s = settings();
+    const out = [];
+    const base = parseSize();
+    const steps = Math.min(50, Math.max(1, Number(s.steps) || 28));
+
+    if (Number(s.upscale_ratio) > 1) out.push(`Upscale ${s.upscale_ratio}x คิด Anlas แยกเสมอ ไม่มีโควตาฟรี`);
+    if (Number(s.gpt_n) > 1 && paramsAreGpt()) out.push(`n = ${s.gpt_n} คูณค่าใช้จ่ายตามจำนวนภาพ`);
+    if (!s.anlas_guard) {
+        if (base.width * base.height > 1024 * 1024) out.push(`ขนาด ${base.width}x${base.height} เกิน 1024x1024 จะกิน Anlas`);
+        if (steps > 28) out.push(`steps ${steps} เกิน 28 จะกิน Anlas`);
+    }
+    if (/-5-(full|curated)/.test(String(s.nai_model || ''))) {
+        out.push('V5 อาจยังไม่อยู่ในโควตาเจนฟรีของ Opus — ถ้าโดน 402 ทั้งที่ค่าอื่นถูกหมด แปลว่าต้องเติม Anlas');
+    }
+    return out;
+}
+
 function updateSizeUi() {
     const s = settings();
     const select = document.getElementById('pxi_size_preset');
@@ -2910,7 +3041,9 @@ function updateSizeUi() {
         hint.textContent = shrunk
             ? `จะส่งจริง ${final.width}x${final.height} (${orientation}) — ย่อจาก ${base.width}x${base.height} โดย "Avoid spending Anlas"`
             : `จะส่งจริง ${final.width}x${final.height} (${orientation})`;
-        hint.classList.toggle('pxi-warn', shrunk);
+        const costs = anlasCostWarnings();
+        if (costs.length) hint.textContent += '\n⚠ ' + costs.join('\n⚠ ');
+        hint.classList.toggle('pxi-warn', shrunk || costs.length > 0);
     }
 }
 
@@ -3059,7 +3192,7 @@ function bindEvents() {
             if (key === 'gpt_size' || key === 'gpt_model') updateGptSizeHint();
             if (key.startsWith('ctx_') || key === 'llm_max_tokens' || key === 'cot_mode') updateContextHints();
             if (key === 'persona_mode') updatePersonaHint();
-            if (key === 'size' || key === 'steps' || key === 'anlas_guard') updateSizeUi();
+            if (['size', 'steps', 'anlas_guard', 'upscale_ratio', 'gpt_n', 'nai_model'].includes(key)) updateSizeUi();
             if (key === 'img_model') {
                 const select = document.getElementById('pxi_img_model_select');
                 if (select) select.value = (settings().img_models || []).includes(el.value) ? el.value : '';
