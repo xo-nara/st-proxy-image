@@ -33,6 +33,7 @@
                 <div class="menu_button menu_button_icon" id="pxi_run_selfie"><i class="fa-solid fa-face-smile"></i><span>Selfie</span></div>
                 <div class="menu_button menu_button_icon" id="pxi_run_user"><i class="fa-solid fa-user-astronaut"></i><span>User</span></div>
                 <div class="menu_button menu_button_icon" id="pxi_run_last"><i class="fa-solid fa-comment-dots"></i><span>Last Message</span></div>
+                <div class="menu_button menu_button_icon" id="pxi_run_screen"><i class="fa-solid fa-mobile-screen"></i><span>Screen / Chat</span></div>
                 <div class="menu_button menu_button_icon" id="pxi_run_manga"><i class="fa-solid fa-table-cells-large"></i><span>Manga</span></div>
                 <div class="menu_button menu_button_icon" id="pxi_run_free"><i class="fa-solid fa-pen-nib"></i><span>Free</span></div>
                 <div class="menu_button menu_button_icon" id="pxi_preview"><i class="fa-solid fa-eye"></i><span>Preview</span></div>
@@ -215,6 +216,7 @@
                         <option value="selfie">Selfie (โคลสอัพหน้าตัวละคร)</option>
                         <option value="user">User (เพอร์โซนาผู้ใช้)</option>
                         <option value="last">Last Message (ฉากล่าสุด)</option>
+                        <option value="screen">Screen / Chat (ภาพหน้าจอ)</option>
                         <option value="manga">Manga Panel (แบ่งช่อง)</option>
                         <option value="free">Free / Scene (คำสั่งทั่วไป)</option>
                     </select>
@@ -357,9 +359,65 @@
                     <select id="pxi_param_engine" class="text_pole">
                         <option value="nai">NovelAI / Diffusion</option>
                         <option value="gpt">GPT-Image</option>
+                        <option value="seedream">Seedream 5.0</option>
                     </select>
                     <small class="pxi-hint">เลือกเอง ไม่มีการเดาจากชื่อโมเดล • ค่าของสองชุดเก็บแยกกัน สลับกลับมาแล้วได้ค่าเดิม • ไม่เกี่ยวกับชุด template ในหมวด ②</small>
                     <hr class="sysHR">
+
+                    <div class="pxi-fieldset pxi-p-seedream">
+                        <div class="pxi-fieldset-title">Seedream 5.0</div>
+                        <label for="pxi_sd_model">Model</label>
+                        <input id="pxi_sd_model" class="text_pole" type="text" list="pxi_sd_model_list" placeholder="seedream-5-0-pro">
+                        <datalist id="pxi_sd_model_list"></datalist>
+
+                        <label for="pxi_sd_style">ประเภทภาพ</label>
+                        <select id="pxi_sd_style" class="text_pole"></select>
+
+                        <label class="checkbox_label" for="pxi_sd_chinese">
+                            <input id="pxi_sd_chinese" type="checkbox">
+                            <span>แปล prompt เป็นภาษาจีนก่อนส่ง <small class="pxi-hint pxi-inline">(Seedream วาดตาม prompt จีนได้แม่นกว่า)</small></span>
+                        </label>
+                        <small class="pxi-hint">ใช้ Connection 1 แปลให้ ข้อความที่ต้องปรากฏในภาพ (ในเครื่องหมายคำพูด) จะไม่ถูกแปล</small>
+
+                        <div class="pxi-grid2">
+                            <div>
+                                <label for="pxi_sd_size">ขนาด</label>
+                                <input id="pxi_sd_size" class="text_pole" type="text" list="pxi_sd_size_list" placeholder="2K">
+                                <datalist id="pxi_sd_size_list"></datalist>
+                            </div>
+                            <div>
+                                <label for="pxi_sd_format">Response format</label>
+                                <select id="pxi_sd_format" class="text_pole">
+                                    <option value="url">url</option>
+                                    <option value="b64_json">b64_json</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="pxi-grid2">
+                            <div>
+                                <label for="pxi_sd_guidance">Guidance scale (1-10)</label>
+                                <input id="pxi_sd_guidance" class="text_pole" type="number" min="1" max="10" step="0.5">
+                            </div>
+                            <div>
+                                <label for="pxi_sd_seed">Seed (-1 = สุ่ม)</label>
+                                <input id="pxi_sd_seed" class="text_pole" type="number" min="-1" step="1">
+                            </div>
+                        </div>
+
+                        <div class="pxi-grid2">
+                            <div>
+                                <label for="pxi_sd_n">จำนวนภาพต่อครั้ง</label>
+                                <input id="pxi_sd_n" class="text_pole" type="number" min="1" max="10" step="1">
+                            </div>
+                        </div>
+
+                        <label class="checkbox_label" for="pxi_sd_watermark">
+                            <input id="pxi_sd_watermark" type="checkbox">
+                            <span>ใส่ลายน้ำของ BytePlus</span>
+                        </label>
+                        <small class="pxi-hint">ขนาดใส่เป็น 2K / 4K หรือ กว้างxสูง ก็ได้ • ใช้ endpoint <code>/v1/images/generations</code> เดียวกับ GPT-Image</small>
+                    </div>
 
                     <div class="pxi-fieldset pxi-p-gpt">
                         <div class="pxi-fieldset-title">GPT-Image</div>

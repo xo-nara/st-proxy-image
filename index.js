@@ -68,6 +68,10 @@ const DEFAULT_TEMPLATES = {
         label: 'Manga Panel (แบ่งช่อง)',
         sys: `You write image prompts for NovelAI Diffusion V5 (anime model).\nTurn the recent scene into ONE comic page made of separate panels - a sequence of moments, not a single illustration.\nV5 lays out multi-panel pages in a single generation and follows plain English about layout, so describe the page plainly and let the tags carry the detail.\n\n=== STEP 1: PICK THE BEATS ===\nChoose 2-4 moments that actually move the story, in the order they happen. Skip anything that would look identical to the panel before it.\nA reliable shape when the scene is short: establishing shot, then the reaction, then the action itself, then the aftermath.\nOne beat per panel. A panel is a single instant, not a summary.\n\n=== STEP 2: PAGE HEADER - ALWAYS FIRST ===\nOpen with the page tags in this order:\n1. 'comic, multiple views, panel layout, borders' - and add 'silent comic' when the page carries no writing at all.\n2. The panel count, exactly one of: '4koma' (four equal panels stacked vertically, the most reliable), '2koma', '3koma', or '6 panels' for a denser page. Never combine two count tags.\n3. The total cast across the whole page as count tags: 1girl / 2girls / 1girl, 1boy ...\n4. A complexity tag for the whole page: 'high complexity' suits a busy page, 'medium complexity' a calm one.\nNever put a single-image framing tag such as cowboy shot or close-up in the header - framing belongs to individual panels, and putting it here collapses the page into one picture with decorative borders.\n\n=== STEP 3: ONE GROUP PER PANEL ===\nWrite each panel as its own numeric-emphasis group so the model keeps them apart:\n   '1.05::panel 1, <framing>, <character tags>, <expression>, <pose or action>, <background> ::'\nRules:\n- Number them 'panel 1', 'panel 2' and so on in reading order, and close every group with a bare '::'.\n- Give every panel its own framing tag and vary it across the page: close-up, upper body, full body, wide shot, from above, from behind, pov, from side. A page where every panel is the same shot reads flat.\n- Repeat each character's identity and key appearance tags inside every panel they appear in. The model does not carry a character from one panel to the next on its own.\n- Keep each panel to 6-12 tags.\n- If a panel has no people in it - a hand, an object, a doorway, the sky - say so with 'no humans' inside that group. Cutaway panels like this make a page feel like real manga.\n\n=== STEP 4: TEXT ON THE PAGE ===\nV5 renders lettering well, so text is allowed when the scene calls for it - but only when asked for explicitly.\n- Default is a wordless page: keep 'silent comic, no text, textless' and tell the story through expression, posture and framing alone.\n- If the Extra instruction asks for dialogue or sound effects, drop 'silent comic' and 'no text', add 'speech bubble', and put the exact words in double quotes so V5 renders them verbatim. Keep it to a few short lines.\n- Never invent dialogue that the scene does not contain.\n\n=== STEP 5: WHAT NOT TO DO ===\n- Do not describe the same moment twice in different panels.\n- Do not let one character's tags spill into another panel's group.\n- Do not add colour tags that contradict the page look given in the input.\n\n${IDENTITY_RULE}\n${RENAMED_RULE}\n${V5_RULE}\n${DENSITY_RULE}\n${RATING_RULE}\n\nThe page look is given separately in the input - follow it exactly.\nClose with: masterpiece, very aesthetic, absurdres, best quality\n40-60 tags total.\n${NAI_RULES}`,
     },
+    screen: {
+        label: 'Screen / Chat (ภาพหน้าจอ)',
+        sys: `You write image prompts for NovelAI Diffusion V5 (anime model).\nThis mode draws a SCREEN or a piece of UI as the subject of the picture - a phone held in someone's hand, a chat window, a message thread. The written content is the point of the image, so text is required, not forbidden.\n\n=== STEP 1: WHAT KIND OF SHOT ===\nDecide which of these the scene calls for and say it in the header:\n- A person holding a device: open with the count tag, then 'holding phone', 'smartphone', 'looking at phone', and frame it as 'upper body' or 'close-up' so the screen is readable.\n- The screen alone filling the frame: use 'no humans', 'phone screen', 'screenshot', 'from above'.\n- A screen over the shoulder: 'over-the-shoulder shot', 'from behind'.\n\n=== STEP 2: THE CHAT LAYOUT ===\nDescribe the message thread as a layout, top to bottom in reading order. For each bubble state three things:\n1. Which side it sits on - 'right-aligned' for the phone owner, 'left-aligned' for the other person. Keep one person on one side for the whole thread.\n2. What it contains - the exact words in double quotes, or 'image attachment' / 'photo in message bubble' / 'thumbnail' when a picture was sent instead of words.\n3. Anything attached to it - avatar, timestamp, read receipt, typing indicator.\nWrite the bubbles as their own emphasis group so they stay separate: '1.05::chat bubble, right-aligned, "see you tonight" ::'\nKeep it to 2-5 bubbles. More than that and the model turns the text into scribbles.\n\n=== STEP 3: WRITING THE TEXT ===\n- Put every line that must appear in the image inside double quotes, exactly as it should read.\n- Keep each line short - a handful of words. Long sentences come out garbled.\n- Write the words in the language they should appear in. Do not translate them.\n- Never invent messages the scene does not contain. Pull the wording from the roleplay text.\n- Include interface furniture when it helps it read as a real screen: 'chat interface', 'messaging app', 'status bar', 'send button', 'contact name', 'speech bubble'.\n\n=== STEP 4: THE REST ===\nDescribe the person holding the device if one is present, then the setting and lighting around them. Add 'high complexity' for a busy screen.\nDo not add no text, textless or silent comic to this prompt - they fight the whole point of this mode.\n\n${IDENTITY_RULE}\n${RENAMED_RULE}\n${V5_RULE}\n${DENSITY_RULE}\n${RATING_RULE}\n\nClose with: masterpiece, very aesthetic, absurdres, best quality\n30-50 tags total.\n${NAI_RULES}`,
+    },
     last: {
         label: 'Last Message (ฉากล่าสุด)',
         sys: `You write image prompts for NovelAI Diffusion V4.5 (anime model).\nTurn the LATEST message into one image that reads as the whole scene at that instant - who is there, where each of them stands, how tall each of them is next to the others, what they are doing to each other, and what the place looks like around them.\n\n=== STEP 1: BUILD THE CAST ===\nList EVERY character physically present in the latest message, not just the ones you were given blocks for. A character counts as present if the message shows them acting, speaking, being touched, being looked at, or standing in the frame.\n- Side characters, named NPCs, servants, guards, shopkeepers, classmates and rivals all belong in the image if the moment shows them. Several unnamed people become one crowd tag in the header ("crowd", "people", "multiple boys") instead of groups.\n- Leave someone out only if the message shows them absent, off-screen, behind a door, or merely mentioned rather than present.\n- Count tags MUST match this cast. Two women and a man is "2girls, 1boy" - never shrink it to "1girl" just because only one character had an appearance block supplied.\n\n=== STEP 2: RESOLVE POSITIONS ===\nA message often moves people around. Read it start to finish and take each character's FINAL position - where they ended up by the last sentence, not where they began.\n- Note for each character: where they are in the room, how far from the others, whether standing, sitting, kneeling or lying, and what they are on or against.\n- Then decide the left-to-right order of the frame. Character groups are emitted in that order: the first group is the leftmost figure, the last group is the rightmost. This ordering is the main way the model places people, so choose it deliberately.\n- Reinforce the layout with relation tags inside the group of the character they describe: "standing", "sitting", "kneeling", "lying", "sitting on lap", "on person", "behind another", "in front of another", "back-to-back", "side-by-side", "leaning forward", "leaning on person", "foreground", "background".\n- If two characters are apart rather than touching, use distance tags such as "facing each other", "across the room", "looking at another" instead of contact tags.\n\n=== STEP 3: RESOLVE HEIGHTS AND EYE LINES ===\n${HEIGHT_RULE}\n- If the height gap is the point of the moment, raise it once: "1.25::height difference, looking up at another ::".\n\n=== STEP 4: IDENTIFY EACH ONE ===\n${IDENTITY_RULE}\n\nWhere each look comes from:\n1. The latest message - always wins for clothing, hair state, expression, pose, injuries, anything temporary.\n2. The appearance block (main character) and the persona block (user's character), for fixed traits including height and build. A persona block appears only when the user's character is actually in the shot - if it is missing, do not draw that character and do not include them in the count tags. If it is present but the latest message shows they are absent, ignore it the same way.\n3. For a side character with no block, build the look from what the message says plus what their identity tag implies. If the message gives nothing, write plain role-appropriate tags rather than skipping them.\n\n=== STEP 5: OUTPUT SHAPE ===\nOne flat comma-separated list in this order:\n\n1. SCENE HEADER - count tags for the whole cast, then the setting: place, indoors or outdoors, time of day, weather, key objects and furniture that anchor the layout, lighting, mood. Then exactly one framing tag wide enough to hold everyone: "wide shot", "full body" and "cowboy shot" work for two or more people and are the ones that actually show a height difference; "from side" helps a layout read clearly; reserve "close-up" and "portrait" for a single figure. Never combine conflicting framing tags.\n\n2. ONE GROUP PER CHARACTER, emitted left to right, each a numeric-emphasis group so the model cannot mix two characters together:\n   "1.05::girl, <identity tags>, <hair>, <eyes>, <height and build>, <skin>, <clothing>, <expression>, <gaze>, <posture and position>, <action tag> ::"\n   - Open with the bare word "girl", "boy" or "other" - never a numbered count tag, those live only in the header.\n   - Close every group with a bare "::" before the next one. Never let one character's tags spill into another group.\n   - Clothing is mandatory. If a character is undressed, say so explicitly or the model will invent an outfit.\n   - The character the moment centres on goes at 1.15; the others stay at 1.05.\n\n=== PLACEMENT ===\n${POSITION_RULE}\n\n=== ACTION TAGS ===\n- Different roles: "source#<action>" on the one performing it, "target#<action>" on the one receiving it. One hugs the other gives source#hug and target#hug.\n- Reciprocal: the same "mutual#<action>" written identically in both groups - mutual#hug, mutual#kissing.\n- Test: if swapping the two characters changes the meaning, use source/target; if it stays the same, use mutual.\n- One action tag per character, except mutual# which is shared. Put it last inside the group. Never rename source, target or mutual, never use them in a solo image, never use them for something done alone - that is a plain tag such as "sitting" or "drinking".\n- With three or more characters, tag only the pair actually interacting; give the bystanders ordinary posture and gaze tags.\n- If nobody is touching anyone, omit action tags entirely.\n\n=== SYNTAX ===\n${DENSITY_RULE}\n${RENAMED_RULE}\n${RATING_RULE}\n\n${STYLE_TAIL}\n\nAt most 4 character groups; if the moment holds more, keep the ones the message focuses on and cover the rest with a crowd tag.\n40-55 tags total.\n${NAI_RULES}`,
@@ -78,6 +82,71 @@ const DEFAULT_TEMPLATES = {
 /* ================================================================== */
 /* GPT-Image templates (prompt แบบประโยคบรรยาย ไม่ใช่แท็ก)             */
 /* ================================================================== */
+
+/* ---------- Seedream 5.0 ---------- */
+
+const SEEDREAM_STYLE_PRESETS = {
+    semi_real: {
+        label: 'Semi-realistic / กึ่งสมจริง (ถนัดสุด)',
+        text: 'Style: semi-realistic digital painting. Realistic anatomy, lighting and material texture with softly stylised faces. Detailed skin and fabric, cinematic colour grading, the polish of a modern game key visual.',
+    },
+    realistic: {
+        label: 'Photorealistic / ภาพถ่ายจริง',
+        text: 'Style: photorealistic photography. Natural skin texture and proportions, physically accurate lighting and shadow, shallow depth of field, shot on a full-frame camera with a fast prime lens.',
+    },
+    cinematic: {
+        label: 'Cinematic / ภาพนิ่งจากหนัง',
+        text: 'Style: cinematic film still. Anamorphic framing, motivated practical lighting, filmic colour grading with lifted shadows, subtle grain, shallow focus.',
+    },
+    anime: {
+        label: 'Anime / อนิเมะ',
+        text: 'Style: modern anime illustration. Clean cel shading, crisp linework, expressive eyes, saturated but controlled colour.',
+    },
+    illustration: {
+        label: 'Illustration / ภาพประกอบ',
+        text: 'Style: polished digital illustration. Confident linework, rich colour, painterly shading, the look of a professional editorial or book illustration.',
+    },
+    render3d: {
+        label: '3D render / เรนเดอร์สามมิติ',
+        text: 'Style: high-end 3D render. Physically based materials, soft global illumination, subsurface scattering on skin, clean topology, shallow depth of field.',
+    },
+    product: {
+        label: 'Product / สินค้า-โฆษณา',
+        text: 'Style: studio product photography. Seamless backdrop, controlled softbox lighting, crisp reflections and accurate material rendering, advertising quality.',
+    },
+    poster: {
+        label: 'Poster / กราฟิกโปสเตอร์',
+        text: 'Style: graphic poster design. Bold composition, strong typography placement, flat colour blocking with considered negative space.',
+    },
+    ink: {
+        label: 'Chinese ink / ภาพหมึกจีน',
+        text: 'Style: traditional Chinese ink painting. Flowing brushwork, ink wash gradients, restrained palette, generous empty space.',
+    },
+    watercolour: {
+        label: 'Watercolour / สีน้ำ',
+        text: 'Style: watercolour painting. Translucent washes, soft bleeding edges, visible paper texture, restrained palette.',
+    },
+    concept: {
+        label: 'Concept art / คอนเซ็ปต์อาร์ต',
+        text: 'Style: concept art. Painterly rendering, dramatic scale and atmosphere, strong value structure, production-design feel.',
+    },
+    portrait_studio: {
+        label: 'Studio portrait / พอร์เทรตสตูดิโอ',
+        text: 'Style: studio portrait photography. Controlled key and rim lighting, clean backdrop, sharp focus on the eyes, natural skin retouching.',
+    },
+};
+
+const SEEDREAM_STYLE_ORDER = ['semi_real', 'realistic', 'cinematic', 'anime', 'illustration', 'render3d', 'product', 'poster', 'ink', 'watercolour', 'concept', 'portrait_studio'];
+
+const SEEDREAM_MODELS = [
+    'seedream-5-0-pro',
+    'seedream-5-0-lite',
+    'bytedance/seedream-5-0-pro',
+    'bytedance/seedream-5-0-lite-preview',
+    'doubao-seedream-5-0',
+];
+
+const SEEDREAM_SIZES = ['2K', '4K', '2048x2048', '2560x1440', '1440x2560', '2304x1728', '1728x2304'];
 
 const GPT_STYLE_PRESETS = {
     realistic: {
@@ -158,6 +227,9 @@ const GPT_TEMPLATES = {
     },
     manga: {
         sys: `${GPT_BASE_RULES}\n\nDescribe ONE comic page divided into separate panels, drawn in black and white with screentone shading.\nSay how many panels there are and how they are arranged - four equal panels stacked vertically is the most reliable choice. Then describe each panel in order as its own sentence or two: what the camera shows, who is in it, what they are doing, and their expression.\nVary the shot across panels rather than repeating the same distance.\nRe-describe each character in every panel they appear in, so they stay consistent.\nThe page contains no writing at all: no dialogue, no speech balloons, no sound effects.`,
+    },
+    screen: {
+        sys: `${GPT_BASE_RULES}\n\nThis one is different: the picture is a SCREEN or a piece of UI - a phone held in someone's hand, a chat window, a message thread. The written content is the point of the image, so text is required here. Ignore any instruction above about avoiding text.\n\nSay plainly which shot it is: a person holding a phone framed from the waist up so the screen stays readable, the screen alone filling the frame, or a view over someone's shoulder.\n\nThen walk through the message thread top to bottom in reading order. For every bubble say which side it sits on - right for the phone owner, left for the other person - and give the exact words in double quotes. Keep one person on one side throughout. When a picture was sent instead of words, say the bubble holds a photo thumbnail and describe what that photo shows in a few words.\nKeep it to 2-5 bubbles with short lines. Long sentences come out garbled.\n\nWrite every line that must appear in the image inside double quotes exactly as it should read, in the language it should appear in. Never invent messages the scene does not contain - take the wording from the roleplay text.\nMention the interface furniture that makes it read as a real screen: the contact name at the top, timestamps, a send button, the status bar.\n\nFinish with the person holding the device if there is one, the setting around them, and the lighting.`,
     },
     last: {
         sys: `${GPT_BASE_RULES}\n\nTurn the LATEST message into one image of that exact moment.\nInclude every character physically present in it, not only the ones given appearance blocks. Describe each one's look, then where they stand relative to each other, who is taller and who is looking up or down, and exactly what they are doing to one another.\nTake each character's final position in the message, not where they started.\nThen describe the setting, the time of day, the light and the mood.\nDraw only what this moment shows - no earlier events.`,
@@ -294,6 +366,15 @@ const defaultSettings = {
     manga_style: 'mono',
     manga_style_remember: false,
     gpt_style: 'realistic',
+    sd_model: 'seedream-5-0-pro',
+    sd_size: '2K',
+    sd_seed: -1,
+    sd_guidance: 3,
+    sd_watermark: false,
+    sd_format: 'url',
+    sd_n: 1,
+    sd_style: 'semi_real',
+    sd_chinese: true,
     gpt_style_custom: '',
     remember_style: false,
     style_per_mode: false,
@@ -383,6 +464,15 @@ const BINDINGS = [
     ['pxi_manga_style', 'manga_style', 'text'],
     ['pxi_manga_style_remember', 'manga_style_remember', 'bool'],
     ['pxi_gpt_style', 'gpt_style', 'text'],
+    ['pxi_sd_model', 'sd_model', 'text'],
+    ['pxi_sd_size', 'sd_size', 'text'],
+    ['pxi_sd_seed', 'sd_seed', 'number'],
+    ['pxi_sd_guidance', 'sd_guidance', 'number'],
+    ['pxi_sd_watermark', 'sd_watermark', 'bool'],
+    ['pxi_sd_format', 'sd_format', 'text'],
+    ['pxi_sd_n', 'sd_n', 'number'],
+    ['pxi_sd_style', 'sd_style', 'text'],
+    ['pxi_sd_chinese', 'sd_chinese', 'bool'],
     ['pxi_gpt_style_custom', 'gpt_style_custom', 'text'],
     ['pxi_remember_style', 'remember_style', 'bool'],
     ['pxi_style_per_mode', 'style_per_mode', 'bool'],
@@ -514,7 +604,8 @@ function initSettings() {
     if (!['nai', 'custom'].includes(s.c2_source)) s.c2_source = 'nai';
     if (s.engine === 'gpt') { s.param_engine ??= 'gpt'; s.tpl_engine ??= 'gpt'; }
     delete s.engine;
-    if (!['nai', 'gpt'].includes(s.param_engine)) s.param_engine = 'nai';
+    if (!['nai', 'gpt', 'seedream'].includes(s.param_engine)) s.param_engine = 'nai';
+    if (!SEEDREAM_STYLE_PRESETS[s.sd_style]) s.sd_style = 'semi_real';
     if (!['nai', 'gpt'].includes(s.tpl_engine)) s.tpl_engine = 'nai';
     if (!Array.isArray(s.llm_models)) s.llm_models = [];
     if (!Array.isArray(s.nai_models_extra)) s.nai_models_extra = [];
@@ -951,6 +1042,12 @@ function buildAutoUserMessage(mode, macros) {
             push('Persona (fixed traits)', macros.persona);
             push('Latest message (current outfit, hair, mood, place)', macros.lastMessage);
             break;
+        case 'screen':
+            parts.push(`Character: ${macros.char} • User persona: ${macros.user}`);
+            push('Character appearance', macros.description);
+            push('Recent conversation (take the wording of any on-screen messages from here)', macros.chat);
+            push('Latest message (draw THIS)', macros.lastMessage);
+            break;
         case 'manga':
             parts.push(`Character: ${macros.char} • User persona: ${macros.user}`);
             push('Character appearance', macros.description);
@@ -981,7 +1078,7 @@ async function buildStage1Messages(mode = 'free', extra = '') {
     const context = getContext();
     const s = settings();
     const macros = await buildMacros(extra);
-    const useGpt = targetIsGpt();
+    const useGpt = targetIsGpt() || paramsAreSeedream();
     const template = useGpt ? gptTemplate(mode) : (s.templates[mode] || s.templates.free);
 
     const substitute = (text) => {
@@ -1008,7 +1105,8 @@ async function buildStage1Messages(mode = 'free', extra = '') {
     const messages = [];
     let system = substitute(template.sys).trim();
     // สไตล์ยึดจากหมวด ⑤ Image Parameters เท่านั้น ไม่ผูกกับชุด template ที่กำลังเปิดดู
-    if (paramsAreGpt()) system = `${system}\n\n${gptStyleText(mode)}`;
+    if (paramsAreSeedream()) system = `${system}\n\n${seedreamStyleText()}`;
+    else if (paramsAreGpt()) system = `${system}\n\n${gptStyleText(mode)}`;
     const vibe = vibeText();
     if (vibe) system = `${system}\n\nRecurring look to keep consistent across images: ${vibe}`;
     else if (mode === 'manga') system = `${system}\n\n${mangaStyleText()}`;
@@ -1237,6 +1335,21 @@ async function callStage1(messages) {
     return s.c1_source === 'custom' ? await stage1ViaCustom(messages) : await stage1ViaProfile(messages);
 }
 
+/** Seedream วาดตาม prompt ภาษาจีนได้แม่นกว่า จึงแปลก่อนส่ง */
+async function translatePromptToChinese(prompt) {
+    const messages = [
+        { role: 'system', content: 'Translate the image prompt into natural Simplified Chinese for an image generation model. Keep every visual detail, keep the order, and keep the same level of specificity. Any text that must appear inside the image stays in its original language and inside its original quotation marks - never translate quoted on-image text. Output the translation only, with no preamble and no explanation.' },
+        { role: 'user', content: prompt },
+    ];
+    const result = await callStage1(messages);
+    const text = normaliseProse(result.text);
+    if (!text) throw new PxiError('แปล prompt เป็นภาษาจีนไม่สำเร็จ', {
+        stage: '1',
+        hints: ['Connection 1 ไม่ได้ส่งคำแปลกลับมา', 'ปลดติ๊กแปลภาษาจีนในหมวด ⑤ เพื่อส่ง prompt ภาษาอังกฤษไปตรง ๆ'],
+    });
+    return text;
+}
+
 async function stage1GeneratePrompt(mode, extra) {
     const s = settings();
     let extraText = String(extra || '');
@@ -1293,6 +1406,20 @@ function targetIsGpt() {
 }
 
 /** ชุดพารามิเตอร์ที่จะถูกส่งไป Connection 2 (หมวด ⑤) — อิสระจากชุด template */
+function paramsAreSeedream() {
+    return settings().param_engine === 'seedream';
+}
+
+/** engine ที่ใช้ prompt แบบประโยคบรรยาย ไม่ใช่แท็ก */
+function paramsAreProse() {
+    return paramsAreGpt() || paramsAreSeedream();
+}
+
+function seedreamStyleText() {
+    const preset = SEEDREAM_STYLE_PRESETS[settings().sd_style];
+    return (preset || SEEDREAM_STYLE_PRESETS.semi_real).text;
+}
+
 function paramsAreGpt() {
     return settings().param_engine === 'gpt';
 }
@@ -1339,12 +1466,27 @@ function normaliseProse(text) {
     return out.replace(/[ \t]{2,}/g, ' ').replace(/\n{3,}/g, '\n\n').trim();
 }
 
-function composePrompt(prompt) {
+/** โหมดที่ตัวหนังสือคือหัวใจของภาพ ต้องไม่ไปห้ามมันในที่อื่น */
+function isTextMode(mode) {
+    return mode === 'screen';
+}
+
+/** ถอดแท็กห้ามตัวหนังสือออกจากชุดที่ผู้ใช้ตั้งไว้ */
+function stripNoTextTags(text) {
+    return String(text || '')
+        .split(',')
+        .map(t => t.trim())
+        .filter(t => t && !/^(no text|textless|speechless|silent comic)$/i.test(t))
+        .join(', ');
+}
+
+function composePrompt(prompt, mode = '') {
     const s = settings();
     const vibe = vibeText();
     // prefix/suffix เป็นแท็กคุณภาพของ NovelAI ไม่มีความหมายกับ GPT-Image
-    if (paramsAreGpt()) return String(prompt || '').trim();
-    return [s.prefix, prompt, vibe, s.suffix].map(p => String(p || '').trim()).filter(Boolean).join(', ');
+    if (paramsAreProse()) return String(prompt || '').trim();
+    const suffix = isTextMode(mode) ? stripNoTextTags(s.suffix) : s.suffix;
+    return [s.prefix, prompt, vibe, suffix].map(p => String(p || '').trim()).filter(Boolean).join(', ');
 }
 
 const SIZE_PRESETS = [
@@ -1457,12 +1599,12 @@ function applyAnlasGuard(width, height, steps) {
     return { width, height, steps };
 }
 
-async function stage2NovelAI(prompt) {
+async function stage2NovelAI(prompt, mode = '') {
     const context = getContext();
     const s = settings();
     const { width, height, steps } = resolvedSize();
     const body = {
-        prompt: composePrompt(prompt),
+        prompt: composePrompt(prompt, mode),
         model: s.nai_model,
         sampler: s.sampler,
         scheduler: s.scheduler,
@@ -1470,7 +1612,7 @@ async function stage2NovelAI(prompt) {
         scale: Number(s.scale) || 5,
         width,
         height,
-        negative_prompt: String(s.negative || '').trim(),
+        negative_prompt: isTextMode(mode) ? stripNoTextTags(s.negative) : String(s.negative || '').trim(),
         upscale_ratio: Number(s.upscale_ratio) || 1,
         decrisper: !!s.decrisper,
         variety_boost: !!s.variety_boost,
@@ -1520,7 +1662,7 @@ function resolveGptSize() {
     return { size: `${match[1]}x${match[2]}`, warnings: [] };
 }
 
-async function stage2GptImage(prompt) {
+async function stage2GptImage(prompt, mode = '') {
     const s = settings();
     const url = resolveImageUrl('generate');
     const { size, warnings } = resolveGptSize();
@@ -1529,7 +1671,7 @@ async function stage2GptImage(prompt) {
     const format = ['png', 'jpeg', 'webp'].includes(s.gpt_output_format) ? s.gpt_output_format : 'png';
     const body = {
         model: s.gpt_model || 'gpt-image-2',
-        prompt: composePrompt(prompt).slice(0, 32000),
+        prompt: composePrompt(prompt, mode).slice(0, 32000),
         size,
         output_format: format,
     };
@@ -1575,7 +1717,7 @@ function customRouteVariants() {
     ];
 }
 
-function buildCustomBody(variant, finalPrompt, width, height) {
+function buildCustomBody(variant, finalPrompt, width, height, mode = '') {
     const s = settings();
     const body = variant.chat
         ? { messages: [{ role: 'user', content: finalPrompt }], max_tokens: 16, width, height }
@@ -1593,16 +1735,17 @@ function buildCustomBody(variant, finalPrompt, width, height) {
     if (s.img_format && !variant.noFormat) {
         body.response_format = variant.formatObject ? { type: s.img_format } : s.img_format;
     }
-    if (String(s.negative || '').trim()) body.negative_prompt = String(s.negative).trim();
+    const negative = isTextMode(mode) ? stripNoTextTags(s.negative) : String(s.negative || '').trim();
+    if (negative) body.negative_prompt = negative;
     if (Number(s.seed) >= 0) body.seed = Number(s.seed);
     Object.assign(body, parseExtraBody());
     return body;
 }
 
-async function tryCustomRoute(variant, finalPrompt, width, height) {
+async function tryCustomRoute(variant, finalPrompt, width, height, mode = '') {
     const s = settings();
     const url = variant.chat ? chatFallbackUrl() : resolveImageUrl('generate');
-    const body = buildCustomBody(variant, finalPrompt, width, height);
+    const body = buildCustomBody(variant, finalPrompt, width, height, mode);
     console.log(LOG, 'custom image request', { url, route: variant.id, width, height, model: s.img_model });
     const data = await requestJson(url, {
         method: 'POST',
@@ -1612,11 +1755,11 @@ async function tryCustomRoute(variant, finalPrompt, width, height) {
     return extractImage(data);
 }
 
-async function stage2Custom(prompt) {
+async function stage2Custom(prompt, mode = '') {
     const s = settings();
     // ใช้ resolvedSize เพื่อให้ติ๊ก "Avoid spending Anlas" มีผลกับเส้นทาง proxy ด้วย
     const { width, height } = resolvedSize();
-    const finalPrompt = composePrompt(prompt);
+    const finalPrompt = composePrompt(prompt, mode);
 
     let variants = customRouteVariants();
     // ถ้าเคยเจอเส้นทางที่ใช้ได้แล้ว ให้ลองอันนั้นก่อนเสมอ
@@ -1629,7 +1772,7 @@ async function stage2Custom(prompt) {
     let lastError = null;
     for (const variant of variants) {
         try {
-            const image = await tryCustomRoute(variant, finalPrompt, width, height);
+            const image = await tryCustomRoute(variant, finalPrompt, width, height, mode);
             if (s.img_route !== variant.id) {
                 s.img_route = variant.id;
                 try { getContext().saveSettingsDebounced(); } catch { /* ignore */ }
@@ -1668,9 +1811,39 @@ async function stage2Custom(prompt) {
     throw lastError || new PxiError('เจนรูปไม่สำเร็จ', { stage: '2' });
 }
 
-async function stage2GenerateImage(prompt) {
-    if (settings().c2_source === 'nai') return await stage2NovelAI(prompt);
-    return paramsAreGpt() ? await stage2GptImage(prompt) : await stage2Custom(prompt);
+async function stage2Seedream(prompt, mode = '') {
+    const s = settings();
+    const url = resolveImageUrl('generate');
+    const finalPrompt = composePrompt(prompt, mode);
+
+    const body = {
+        model: s.sd_model || 'seedream-5-0-pro',
+        prompt: finalPrompt,
+    };
+    const size = String(s.sd_size || '2K').trim();
+    if (size) body.size = size;
+    if (['url', 'b64_json'].includes(s.sd_format)) body.response_format = s.sd_format;
+    if (Number(s.sd_seed) >= 0) body.seed = Number(s.sd_seed);
+    const guidance = Number(s.sd_guidance);
+    if (Number.isFinite(guidance) && guidance > 0) body.guidance_scale = Math.min(10, Math.max(1, guidance));
+    body.watermark = !!s.sd_watermark;
+    const count = Math.min(10, Math.max(1, Number(s.sd_n) || 1));
+    if (count > 1) body.n = count;
+    Object.assign(body, parseExtraBody());
+
+    console.log(LOG, 'seedream request', { url, model: body.model, size: body.size, chinese: !!s.sd_chinese });
+    const data = await requestJson(url, {
+        method: 'POST',
+        headers: authHeaders(s.img_key),
+        body: JSON.stringify(body),
+    }, s.img_timeout, '2');
+    return extractImage(data);
+}
+
+async function stage2GenerateImage(prompt, mode = '') {
+    if (settings().c2_source === 'nai') return await stage2NovelAI(prompt, mode);
+    if (paramsAreSeedream()) return await stage2Seedream(prompt, mode);
+    return paramsAreGpt() ? await stage2GptImage(prompt, mode) : await stage2Custom(prompt, mode);
 }
 
 /**
@@ -1679,14 +1852,14 @@ async function stage2GenerateImage(prompt) {
  */
 const MAX_GENERATE_ATTEMPTS = 5;
 
-async function generateWithRetry(prompt, { quiet = false } = {}) {
+async function generateWithRetry(prompt, { quiet = false, mode = '' } = {}) {
     let current = String(prompt || '').trim();
     for (let attempt = 1; attempt <= MAX_GENERATE_ATTEMPTS; attempt++) {
         try {
             setProgress('image', attempt > 1 ? `ครั้งที่ ${attempt}` : '');
             setStatus(attempt === 1 ? '② กำลังเจนรูป...' : `② กำลังเจนรูป (ครั้งที่ ${attempt})...`);
             if (!quiet && attempt === 1) notify('กำลังเจนรูป (Connection 2)...');
-            const image = await stage2GenerateImage(current);
+            const image = await stage2GenerateImage(current, mode);
             return { image, prompt: current };
         } catch (error) {
             console.error(LOG, error);
@@ -2017,7 +2190,13 @@ async function runPipeline({ mode = 'free', rawPrompt = '', extra = '', quiet = 
             prompt = edited;
         }
 
-        const result = await generateWithRetry(prompt, { quiet });
+        if (paramsAreSeedream() && s.sd_chinese) {
+            setProgress('prompt', 'แปลเป็นภาษาจีน');
+            prompt = await translatePromptToChinese(prompt);
+            console.log(LOG, 'chinese prompt', prompt);
+        }
+
+        const result = await generateWithRetry(prompt, { quiet, mode });
         if (!result) return null;
         setProgress('upload');
         const path = result.image.kind === 'base64' ? await uploadBase64(result.image.value) : result.image.value;
@@ -2118,7 +2297,7 @@ async function onImageSwiped({ message, direction }) {
     reacquireWakeLock();
     try {
         notify('กำลังเจนรูปใบใหม่...');
-        const result = await generateWithRetry(edited, { quiet: true });
+        const result = await generateWithRetry(edited, { quiet: true, mode: message.extra?.pxi?.mode || '' });
         if (!result) return;
         const path = result.image.kind === 'base64' ? await uploadBase64(result.image.value) : result.image.value;
         media.push({ url: path, type: 'image', title: result.prompt, source: 'generated', generation_type: 'proxy_image_gen' });
@@ -2625,8 +2804,10 @@ function toggleSourceBlocks() {
     const usesCustomEndpoint = s.c2_source === 'custom';
     document.querySelectorAll('.pxi-c2-custom').forEach(el => el.classList.toggle('pxi-hidden', !usesCustomEndpoint));
     const gptParams = s.param_engine === 'gpt';
+    const sdParams = s.param_engine === 'seedream';
     document.querySelectorAll('.pxi-p-gpt').forEach(el => el.classList.toggle('pxi-hidden', !gptParams));
-    document.querySelectorAll('.pxi-p-diffusion').forEach(el => el.classList.toggle('pxi-hidden', gptParams));
+    document.querySelectorAll('.pxi-p-seedream').forEach(el => el.classList.toggle('pxi-hidden', !sdParams));
+    document.querySelectorAll('.pxi-p-diffusion').forEach(el => el.classList.toggle('pxi-hidden', gptParams || sdParams));
     document.querySelectorAll('.pxi-style-custom').forEach(el => el.classList.toggle('pxi-hidden', s.gpt_style !== 'custom'));
     if (usesCustomEndpoint) updateUrlModeUi();
 }
@@ -2897,6 +3078,25 @@ function populateMangaStyles() {
     select.value = mangaStyleKey();
 }
 
+function populateSeedreamStyles() {
+    const select = document.getElementById('pxi_sd_style');
+    if (!select || select.dataset?.filled === '1') return;
+    select.innerHTML = '';
+    for (const key of SEEDREAM_STYLE_ORDER) {
+        const option = document.createElement('option');
+        option.value = key;
+        option.textContent = SEEDREAM_STYLE_PRESETS[key].label;
+        select.append(option);
+    }
+    if (select.dataset) select.dataset.filled = '1';
+    select.value = SEEDREAM_STYLE_PRESETS[settings().sd_style] ? settings().sd_style : 'semi_real';
+
+    const models = document.getElementById('pxi_sd_model_list');
+    if (models) models.innerHTML = SEEDREAM_MODELS.map(m => `<option value="${m}"></option>`).join('');
+    const sizes = document.getElementById('pxi_sd_size_list');
+    if (sizes) sizes.innerHTML = SEEDREAM_SIZES.map(m => `<option value="${m}"></option>`).join('');
+}
+
 function populateGptStyles() {
     const select = document.getElementById('pxi_gpt_style');
     if (!select || select.dataset?.filled === '1') return;
@@ -3158,6 +3358,7 @@ function loadSettingsToUi() {
     populateVibes();
     populateMangaStyles();
     populateGptStyles();
+    populateSeedreamStyles();
     populateImageModels();
     populateLlmModels();
     updateGptSizeHint();
@@ -3297,6 +3498,7 @@ function buildDropdown() {
         ['selfie', 'fa-face-smile', 'Selfie'],
         ['user', 'fa-user-astronaut', 'User'],
         ['last', 'fa-comment-dots', 'Last Message'],
+        ['screen', 'fa-mobile-screen', 'Screen / Chat'],
         ['manga', 'fa-table-cells-large', 'Manga Panel'],
         ['free', 'fa-pen-nib', 'Free / Scene'],
     ];
