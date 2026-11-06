@@ -45,6 +45,23 @@ const SEARCH_RULE = `You have web access. Use it for identity work instead of re
 
 const PLANNING_RULE = `Think before you answer. Open your reply with a <planning> block and work through these in order:\n1. Cast - list every character present in the moment by name.\n2. Identity - for each one, name the work they come from, then write the booru tag you intend to use and how sure you are of the exact spelling. If you are sure, commit to it. If you only know the work, say so and commit to the series tag alone. If you recognise nothing, say "original" and move on. Check the pinned glossary first if one was supplied.\n3. Placement - each one's final position, and the left-to-right order of the frame.\n4. Heights - rank them, and note who looks up and who looks down.\n5. Interaction - who acts on whom, and whether it is source/target or mutual.\n6. Setting - place, time, light, and the franchise style to close on.\nKeep the block short, one line per item. Close it with </planning>, then output the tag list on the next line with nothing else after it. The planning block is discarded and never reaches the image model.`;
 
+/**
+ * กฎปิดท้ายเมื่อส่งงานผ่าน Preset / Prompt Manager ของ ST
+ * Preset ส่วนใหญ่เขียนมาเพื่อตอบ RP (ความยาว, ภาษา, status panel, บล็อกคิดของตัวเอง)
+ * จึงต้องบอกให้ชัดว่ารอบนี้เป็นงานเสริม และให้ห่อคำตอบจริงไว้ในแท็กที่ดึงออกมาได้แน่นอน
+ */
+const PRESET_ANSWER_TAG = 'image_prompt';
+
+const PRESET_OUTPUT_RULE = `[Side task - not a roleplay reply]\nThis turn does not continue the story. Do not write as any character and do not narrate. Instructions above about reply length, narration style, status panels, trackers or reply language apply to roleplay replies only - not to this task.\nYou may think or plan first in whatever format your instructions ask for. Then write the final image prompt, following the image-prompt rules given in this conversation, wrapped exactly like this:\n<${PRESET_ANSWER_TAG}>\nthe prompt only\n</${PRESET_ANSWER_TAG}>\nOnly the text inside <${PRESET_ANSWER_TAG}> is used, everything outside it is discarded. Write the prompt in English even if other instructions ask for another language; text that must appear inside the picture keeps its own language.`;
+
+/** marker ใน Prompt Manager — extension ประกอบข้อมูลพวกนี้ให้เองอยู่แล้ว จึงไม่ดึงซ้ำ */
+const PM_MARKERS = new Set(['chatHistory', 'dialogueExamples', 'worldInfoBefore', 'worldInfoAfter', 'charDescription', 'charPersonality', 'scenario', 'personaDescription']);
+
+/** ลำดับ prompt แบบ global ของ Prompt Manager ฝั่ง Chat Completion */
+const PM_GLOBAL_IDS = ['100001', '100000'];
+
+const PRESET_FROM_PROFILE = '__profile__';
+
 const ANALYSIS_SYSTEM = `You are analysing a roleplay scene so that another model can turn it into an image prompt for NovelAI Diffusion V4.5.\nDo not write any tags except the character and series tags asked for in item 2. Write a short analysis in plain English, one line per item:\n1. Cast - every character physically present in the latest message, by name.\n2. Identity - for each character, name the work they come from, then give the booru tag you would use and how sure you are of the exact spelling. NovelAI follows Danbooru, but the scheme is shared with Gelbooru, Safebooru, AIBooru and e621, so recall from whichever you know best. Format is usually "name (series)" or a bare name, lowercase, surname first for Japanese names. If you know the work but not the exact character spelling, say so and give the series tag alone. If the character is original, say "original". Check the pinned glossary first if one was supplied and use those spellings verbatim.\n3. Appearance - for each character: hair, eyes, build and height, and what they are wearing RIGHT NOW according to the scene.\n4. Placement - each character's final position, and the left-to-right order they should appear in the frame.\n5. Heights and eye lines - who is taller, who looks up, who looks down, who is seated or kneeling.\n6. Interaction - who is doing what to whom, or state that nobody is touching anyone.\n7. Setting - place, indoors or outdoors, time of day, light, mood, and the notable objects around them.\n8. Framing - the single camera framing that fits, and the franchise art style if there is one.\nBe concrete and brief. No preamble, no markdown.`;
 
 const DEFAULT_TEMPLATES = {
@@ -327,6 +344,10 @@ const defaultSettings = {
     llm_model: '',
     llm_max_tokens: 600,
     cot_mode: 'off',
+    c1_preset_mode: 'off',
+    c1_preset_name: '',
+    c1_preset_tokens: 0,
+    c1_strip_tags: '',
     llm_can_search: false,
     llm_temp: 0.7,
     llm_timeout: 90,
@@ -433,6 +454,10 @@ const BINDINGS = [
     ['pxi_llm_model', 'llm_model', 'text'],
     ['pxi_llm_max_tokens', 'llm_max_tokens', 'number'],
     ['pxi_cot_mode', 'cot_mode', 'text'],
+    ['pxi_c1_preset_mode', 'c1_preset_mode', 'text'],
+    ['pxi_c1_preset_name', 'c1_preset_name', 'text'],
+    ['pxi_c1_preset_tokens', 'c1_preset_tokens', 'number'],
+    ['pxi_c1_strip_tags', 'c1_strip_tags', 'text'],
     ['pxi_llm_can_search', 'llm_can_search', 'bool'],
     ['pxi_llm_temp', 'llm_temp', 'number'],
     ['pxi_llm_timeout', 'llm_timeout', 'number'],
@@ -551,6 +576,10 @@ function abortActiveRequests() {
         try { controller.abort(); } catch { /* ignore */ }
     }
     activeControllers.clear();
+    // คำขอที่วิ่งผ่าน Generate ของ ST (โหมด Preset) ไม่มี AbortController ของเรา ต้องสั่งหยุดผ่าน ST
+    if (stGenerationActive) {
+        try { getContext().stopGeneration?.(); } catch { /* ignore */ }
+    }
 }
 let isSwipePromptOpen = false;
 let connectionService = null;
@@ -576,6 +605,8 @@ function initSettings() {
     delete s.msg_template;  // ยกเลิกตั้งแต่ 2.11.0 (ข้อความ = prompt เสมอ)
     delete s.hide_message;  // ยกเลิกตั้งแต่ 2.11.0 (ซ่อนจาก AI เสมอ)
     if (!['off', 'light', 'heavy'].includes(s.cot_mode)) s.cot_mode = 'off';
+    if (!['off', 'wrap', 'full'].includes(s.c1_preset_mode)) s.c1_preset_mode = 'off';
+    if (typeof s.c1_preset_name !== 'string') s.c1_preset_name = '';
     if (!['auto', 'always', 'never'].includes(s.persona_mode)) s.persona_mode = 'auto';
     if (!Array.isArray(s.img_models)) s.img_models = [];
     if (!['auto', 'path', 'exact'].includes(s.img_url_mode)) s.img_url_mode = 'auto';
@@ -1074,10 +1105,15 @@ function buildAutoUserMessage(mode, macros) {
     return parts.join('\n\n');
 }
 
-async function buildStage1Messages(mode = 'free', extra = '') {
+/**
+ * @param {object} [options]
+ * @param {boolean} [options.lean] โหมดวิ่งผ่าน ST เต็มระบบ — ประวัติแชทถูกส่งไปกับ Preset อยู่แล้ว จึงไม่แนบบล็อก chat ซ้ำ
+ */
+async function buildStage1Messages(mode = 'free', extra = '', { lean = false } = {}) {
     const context = getContext();
     const s = settings();
     const macros = await buildMacros(extra);
+    if (lean) macros.chat = '';
     const useGpt = targetIsGpt() || paramsAreSeedream();
     const template = useGpt ? gptTemplate(mode) : (s.templates[mode] || s.templates.free);
 
@@ -1092,6 +1128,7 @@ async function buildStage1Messages(mode = 'free', extra = '') {
     };
 
     let userMessage = buildAutoUserMessage(mode, macros);
+    if (lean) userMessage += '\n\nThe roleplay so far is the conversation above - read the scene from it.';
 
     const glossary = String(s.tag_hints || '').trim();
     if (glossary) {
@@ -1111,7 +1148,7 @@ async function buildStage1Messages(mode = 'free', extra = '') {
     if (vibe) system = `${system}\n\nRecurring look to keep consistent across images: ${vibe}`;
     else if (mode === 'manga') system = `${system}\n\n${mangaStyleText()}`;
     if (settings().llm_can_search) system = `${system}\n\n${SEARCH_RULE}`;
-    if (settings().cot_mode === 'light') system = `${system}\n\n${PLANNING_RULE}`;
+    if (effectiveCotMode() === 'light') system = `${system}\n\n${PLANNING_RULE}`;
     if (system) messages.push({ role: 'system', content: system });
     messages.push({ role: 'user', content: userMessage.trim() || macros.chat });
     return messages;
@@ -1199,19 +1236,26 @@ async function loadConnectionService() {
     return connectionService;
 }
 
-async function stage1ViaProfile(messages) {
+/**
+ * @param {object[]} messages
+ * @param {object} [options]
+ * @param {boolean} [options.includePreset] ใช้ค่า sampler จาก Preset ที่ผูกกับโปรไฟล์ (โหมดห่อด้วย Prompt Manager)
+ * @param {number} [options.maxTokens]
+ */
+async function stage1ViaProfile(messages, { includePreset = false, maxTokens = 0 } = {}) {
     const context = getContext();
     const s = settings();
     const service = await loadConnectionService();
-    const profileId = s.c1_profile || context.extensionSettings?.connectionManager?.selectedProfile || '';
+    const profileId = c1ProfileId();
+    const budget = maxTokens || tokenBudget();
 
     if (service && profileId) {
         try {
-            const result = await service.sendRequest(profileId, messages, tokenBudget(), {
+            const result = await service.sendRequest(profileId, messages, budget, {
                 stream: false,
                 extractData: true,
-                includePreset: false,
-                includeInstruct: false,
+                includePreset,
+                includeInstruct: includePreset,
             });
             const content = typeof result === 'string' ? result : result?.content;
             if (content) return { text: content, raw: String(content).slice(0, 800), finish: result?.finishReason };
@@ -1228,6 +1272,10 @@ async function stage1ViaProfile(messages) {
     }
 
     // fallback: ใช้ API ปัจจุบันของ SillyTavern
+    // ข้อความที่ห่อด้วย Preset แล้วต้องไม่ผ่าน Prompt Manager ซ้ำอีกรอบ จึงใช้ generateRaw แทน
+    if (includePreset && typeof context.generateRaw === 'function') {
+        return await stage1ViaRaw(messages, budget);
+    }
     if (typeof context.generateQuietPrompt !== 'function') {
         throw new PxiError('ไม่พบโปรไฟล์การเชื่อมต่อที่ใช้ได้', {
             stage: '1',
@@ -1243,10 +1291,22 @@ async function stage1ViaProfile(messages) {
         quietPrompt,
         quietToLoud: false,
         skipWIAN: true,
-        responseLength: tokenBudget(),
+        responseLength: budget,
         quietName: 'PromptMaker',
     });
     return { text, raw: String(text || '').slice(0, 800), finish: '' };
+}
+
+function c1ProfileId() {
+    const context = getContext();
+    return settings().c1_profile || context.extensionSettings?.connectionManager?.selectedProfile || '';
+}
+
+function c1Profile() {
+    const id = c1ProfileId();
+    if (!id) return null;
+    const profiles = getContext().extensionSettings?.connectionManager?.profiles;
+    return Array.isArray(profiles) ? profiles.find(p => p?.id === id) || null : null;
 }
 
 /**
@@ -1263,7 +1323,7 @@ function relayBaseUrl() {
 }
 
 /** ยิงผ่านเซิร์ฟเวอร์ ST (Node) เพื่อให้คำขอไม่ตายตอนพับจอ */
-async function stage1ViaRelay(messages, base) {
+async function stage1ViaRelay(messages, base, maxTokens = 0) {
     const context = getContext();
     const s = settings();
     const body = {
@@ -1272,7 +1332,7 @@ async function stage1ViaRelay(messages, base) {
         proxy_password: String(s.llm_key || '').trim(),
         model: s.llm_model || undefined,
         messages,
-        max_tokens: tokenBudget(),
+        max_tokens: maxTokens || tokenBudget(),
         temperature: Number.isFinite(Number(s.llm_temp)) ? Number(s.llm_temp) : 0.7,
         stream: false,
     };
@@ -1298,11 +1358,11 @@ async function stage1ViaRelay(messages, base) {
     return { text, raw: JSON.stringify(data).slice(0, 1200), finish: choice?.finish_reason || choice?.native_finish_reason };
 }
 
-async function stage1ViaCustom(messages) {
+async function stage1ViaCustom(messages, { maxTokens = 0 } = {}) {
     const s = settings();
     if (s.c1_via_server) {
         const base = relayBaseUrl();
-        if (base) return await stage1ViaRelay(messages, base);
+        if (base) return await stage1ViaRelay(messages, base, maxTokens);
         console.warn(LOG, 'โหมด URL นี้ relay ผ่านเซิร์ฟเวอร์ ST ไม่ได้ ยิงตรงจากเบราว์เซอร์แทน');
     }
     const url = resolveLlmUrl('generate');
@@ -1312,7 +1372,7 @@ async function stage1ViaCustom(messages) {
         body: JSON.stringify({
             model: s.llm_model || undefined,
             messages,
-            max_tokens: tokenBudget(),
+            max_tokens: maxTokens || tokenBudget(),
             temperature: Number.isFinite(Number(s.llm_temp)) ? Number(s.llm_temp) : 0.7,
             stream: false,
         }),
@@ -1327,12 +1387,298 @@ async function stage1ViaCustom(messages) {
 function tokenBudget() {
     const s = settings();
     const base = Math.max(16, Number(s.llm_max_tokens) || 600);
-    return s.cot_mode === 'light' ? Math.round(base * 1.8) : base;
+    return effectiveCotMode() === 'light' ? Math.round(base * 1.8) : base;
 }
 
-async function callStage1(messages) {
+/** ยิง Connection 1 แบบธรรมดา ไม่ผ่าน Preset (ใช้กับงานเสริม เช่น แปลภาษา) */
+async function callStage1(messages, options = {}) {
     const s = settings();
-    return s.c1_source === 'custom' ? await stage1ViaCustom(messages) : await stage1ViaProfile(messages);
+    if (presetMode() === 'full') return await stage1ViaRaw(messages, options.maxTokens || tokenBudget());
+    return s.c1_source === 'custom' ? await stage1ViaCustom(messages, options) : await stage1ViaProfile(messages, options);
+}
+
+/* ---------- Preset / Prompt Manager ---------- */
+
+/** off = ระบบคิดของ extension เอง • wrap = ดึง prompt ใน Preset มาห่อ • full = วิ่งผ่าน Generate ของ ST ทั้งระบบ */
+function presetMode() {
+    const mode = settings().c1_preset_mode;
+    return mode === 'wrap' || mode === 'full' ? mode : 'off';
+}
+
+/** เมื่อใช้ Preset ระบบ planning / CoT ของ extension จะถูกปิด ให้ Preset จัดการการคิดเอง */
+function effectiveCotMode() {
+    return presetMode() === 'off' ? settings().cot_mode : 'off';
+}
+
+function ccPresetManager() {
+    try {
+        return getContext().getPresetManager?.('openai') || null;
+    } catch {
+        return null;
+    }
+}
+
+function activePresetName() {
+    try {
+        return ccPresetManager()?.getSelectedPresetName?.() || '';
+    } catch {
+        return '';
+    }
+}
+
+/**
+ * Preset ที่จะดึง prompt มาใช้ในโหมด wrap
+ * Preset ที่เปิดอยู่ตอนนี้อ่านจาก chatCompletionSettings ตรง ๆ เพื่อให้ได้ค่าที่ยังไม่ได้กดเซฟด้วย
+ */
+function resolvePresetSource() {
+    const context = getContext();
+    const manager = ccPresetManager();
+    const active = activePresetName();
+    let name = String(settings().c1_preset_name || '');
+    let note = '';
+
+    if (name === PRESET_FROM_PROFILE) {
+        const profile = settings().c1_source === 'profile' ? c1Profile() : null;
+        const linked = String(profile?.preset || '');
+        // โปรไฟล์ Text Completion (mode = tc) ผูก preset ของ TC ซึ่งไม่มี Prompt Manager
+        const isChatPreset = linked && profile?.mode !== 'tc' && manager?.getAllPresets?.().includes(linked);
+        if (isChatPreset) {
+            name = linked;
+        } else {
+            note = profile
+                ? 'โปรไฟล์นี้ไม่ได้ผูก Chat Completion preset ไว้ — ใช้ Preset ที่เปิดอยู่แทน'
+                : 'ไม่ได้ใช้ Connection Profile — ใช้ Preset ที่เปิดอยู่แทน';
+            name = '';
+        }
+    }
+
+    if (!name || name === active) {
+        const live = context.chatCompletionSettings;
+        if (!live || !Array.isArray(live.prompts)) {
+            throw new PxiError('อ่าน Preset ที่เปิดอยู่ไม่ได้', {
+                stage: '1',
+                hints: [
+                    'SillyTavern เวอร์ชันนี้ไม่เปิดให้ extension อ่าน Prompt Manager — อัปเดต ST แล้วลองใหม่',
+                    'หรือเปลี่ยนโหมดเป็น "วิ่งผ่าน ST เต็มระบบ" ซึ่งไม่ต้องอ่าน Preset เอง',
+                ],
+            });
+        }
+        return { name: active || '(Preset ที่เปิดอยู่)', data: live, note };
+    }
+
+    const data = manager?.getCompletionPresetByName?.(name);
+    if (!data || !Array.isArray(data.prompts)) {
+        throw new PxiError(`ไม่พบ Chat Completion preset ชื่อ "${name}"`, {
+            stage: '1',
+            hints: [
+                'Preset อาจถูกลบหรือเปลี่ยนชื่อไปแล้ว — กดรีเฟรชรายชื่อ Preset ในหมวด ① แล้วเลือกใหม่',
+                'Preset ของ Text Completion ไม่มี Prompt Manager ให้ดึง ต้องเป็น Preset ของ Chat Completion เท่านั้น',
+            ],
+        });
+    }
+    return { name, data, note };
+}
+
+function presetPromptOrder(data) {
+    const lists = Array.isArray(data?.prompt_order) ? data.prompt_order : [];
+    const pick = PM_GLOBAL_IDS.map(id => lists.find(list => String(list?.character_id) === id)).find(Boolean) || lists[0];
+    if (Array.isArray(pick?.order)) return pick.order;
+    // Preset รุ่นเก่ามากที่ไม่มี prompt_order
+    return (data?.prompts || []).map(p => ({ identifier: p?.identifier, enabled: p?.enabled !== false }));
+}
+
+/**
+ * ห่อข้อความของ extension ด้วย prompt ที่เปิดไว้ใน Prompt Manager
+ * - ไล่ตามลำดับใน Preset: prompt ก่อน marker "Chat History" อยู่ก่อนงานของเรา, ที่อยู่หลังจากนั้น (post-history / jailbreak / CoT) ตามหลัง
+ * - prompt แบบ in-chat @depth ถูกแทรกรอบ ๆ ข้อความของเรา (depth 0 = หลังสุด)
+ * - marker อื่น ๆ (การ์ด, persona, lorebook) ข้าม เพราะ extension แนบให้เองแล้วในขนาดที่คุมได้
+ * - เคารพ "Triggers" ของแต่ละ prompt โดยถือว่ารอบนี้เป็นการเจนแบบ quiet เหมือนที่ ST ทำกับงานของ extension
+ */
+function buildPresetWrappedMessages(inner, source) {
+    const context = getContext();
+    const substitute = (text) => {
+        try {
+            return context.substituteParams ? context.substituteParams(String(text || '')) : String(text || '');
+        } catch {
+            return String(text || '');
+        }
+    };
+    const prompts = new Map((source.data.prompts || []).filter(p => p?.identifier).map(p => [p.identifier, p]));
+    const before = [];
+    const after = [];
+    const inChat = [];
+    const used = [];
+    let historyPlaced = false;
+
+    for (const entry of presetPromptOrder(source.data)) {
+        if (!entry?.enabled) continue;
+        const prompt = prompts.get(entry.identifier);
+        if (!prompt) continue;
+        const triggers = Array.isArray(prompt.injection_trigger) ? prompt.injection_trigger : [];
+        if (triggers.length && !triggers.includes('quiet')) continue;
+        if (prompt.identifier === 'chatHistory') { historyPlaced = true; continue; }
+        if (prompt.marker || PM_MARKERS.has(prompt.identifier)) continue;
+
+        const content = substitute(prompt.content).trim();
+        if (!content) continue;
+        const role = ['system', 'user', 'assistant'].includes(prompt.role) ? prompt.role : 'system';
+        used.push(prompt.name || prompt.identifier);
+
+        if (Number(prompt.injection_position) === 1) {
+            inChat.push({ role, content, depth: Math.max(0, Number(prompt.injection_depth) || 0) });
+            continue;
+        }
+        (historyPlaced ? after : before).push({ role, content });
+    }
+
+    const innerSystem = inner.filter(m => m.role === 'system');
+    const innerRest = inner.filter(m => m.role !== 'system');
+    const deep = inChat.filter(p => p.depth > 0).sort((a, b) => b.depth - a.depth).map(({ role, content }) => ({ role, content }));
+    const shallow = inChat.filter(p => p.depth === 0).map(({ role, content }) => ({ role, content }));
+
+    const messages = [
+        ...before,
+        ...innerSystem,
+        ...deep,
+        ...innerRest,
+        ...shallow,
+        ...after,
+        { role: 'system', content: PRESET_OUTPUT_RULE },
+    ];
+    return { messages, used };
+}
+
+/** เพดาน tokens ในโหมด Preset: 0 = ใช้ Max Response Length ของ Preset */
+function presetTokenBudget(presetData = null) {
+    const own = Number(settings().c1_preset_tokens) || 0;
+    if (own > 0) return Math.max(16, own);
+    const fromPreset = Number(presetData?.openai_max_tokens) || Number(getContext().chatCompletionSettings?.openai_max_tokens) || 0;
+    return Math.max(fromPreset, tokenBudget());
+}
+
+/** สถานะคำขอที่วิ่งผ่าน Generate ของ ST เอง (ปุ่ม Stop ต้องสั่งหยุดผ่าน ST) */
+let stGenerationActive = false;
+
+async function withStGeneration(task) {
+    stGenerationActive = true;
+    try {
+        const text = await task();
+        if (userAborted) throw new PxiError('ยกเลิกโดยผู้ใช้', { stage: '1', hints: ['กดปุ่ม Stop ระหว่างกำลังทำงาน'] });
+        return { text: String(text || ''), raw: String(text || '').slice(0, 1200), finish: '' };
+    } catch (error) {
+        if (userAborted) throw new PxiError('ยกเลิกโดยผู้ใช้', { stage: '1', hints: ['กดปุ่ม Stop ระหว่างกำลังทำงาน'] });
+        if (error instanceof PxiError) throw error;
+        throw new PxiError(String(error?.message || error || 'SillyTavern สร้างข้อความไม่สำเร็จ'), {
+            stage: '1',
+            hints: [
+                'เช็คว่า API ในหน้าหลักของ SillyTavern ยังเชื่อมต่ออยู่ (ไอคอนปลั๊กเป็นสีเขียว)',
+                'ถ้าแชทหลักกำลังเจนข้อความอยู่ ให้รอให้เสร็จก่อนแล้วค่อยกดสร้างรูป',
+                'ดูข้อความ error เต็ม ๆ ได้ใน console ของเบราว์เซอร์',
+            ],
+        });
+    } finally {
+        stGenerationActive = false;
+    }
+}
+
+/** ยิงผ่าน API หลักของ ST โดยไม่ผ่าน Prompt Manager (ข้อความถูกประกอบมาครบแล้ว) */
+async function stage1ViaRaw(messages, maxTokens) {
+    const context = getContext();
+    if (typeof context.generateRaw !== 'function') {
+        throw new PxiError('SillyTavern เวอร์ชันนี้ไม่มี generateRaw', { stage: '1', hints: ['อัปเดต SillyTavern หรือเลือก Connection Profile ในหมวด ①'] });
+    }
+    return await withStGeneration(() => context.generateRaw({
+        prompt: messages,
+        responseLength: maxTokens || tokenBudget(),
+        trimNames: false,
+    }));
+}
+
+/**
+ * โหมด full: ให้ ST ประกอบ prompt เองทั้งชุดเหมือนตอนส่งแชทปกติ
+ * (Preset + Prompt Manager + การ์ด + persona + lorebook + ประวัติแชท) แล้วต่องานของเราไว้ท้ายสุดเป็น quiet prompt
+ */
+async function stage1ViaPipeline(quietPrompt) {
+    const context = getContext();
+    if (typeof context.generateQuietPrompt !== 'function') {
+        throw new PxiError('SillyTavern เวอร์ชันนี้ไม่มี generateQuietPrompt', { stage: '1', hints: ['อัปเดต SillyTavern หรือเปลี่ยนโหมด Preset เป็น "ห่อด้วย Prompt Manager"'] });
+    }
+    const own = Number(settings().c1_preset_tokens) || 0;
+    return await withStGeneration(() => context.generateQuietPrompt({
+        quietPrompt,
+        quietToLoud: false,
+        skipWIAN: false,
+        responseLength: own > 0 ? own : null,
+        removeReasoning: true,
+    }));
+}
+
+/** ประกอบคำขอของโหมด Preset (ใช้ทั้งตอนเจนจริงและตอนกด Preview) */
+async function buildPresetRequest(mode, extra) {
+    if (presetMode() === 'full') {
+        const inner = await buildStage1Messages(mode, extra, { lean: true });
+        const quietPrompt = [...inner.map(m => m.content), PRESET_OUTPUT_RULE].join('\n\n');
+        return { kind: 'full', quietPrompt, presetName: activePresetName() };
+    }
+    const inner = await buildStage1Messages(mode, extra);
+    const source = resolvePresetSource();
+    const { messages, used } = buildPresetWrappedMessages(inner, source);
+    return { kind: 'wrap', messages, used, presetName: source.name, note: source.note, maxTokens: presetTokenBudget(source.data) };
+}
+
+async function stage1ViaPreset(mode, extra) {
+    const request = await buildPresetRequest(mode, extra);
+    if (request.kind === 'full') {
+        console.log(LOG, 'preset (full pipeline)', request.presetName);
+        return await stage1ViaPipeline(request.quietPrompt);
+    }
+    if (request.note) console.warn(LOG, request.note);
+    console.log(LOG, `preset "${request.presetName}" wraps`, request.used);
+    const s = settings();
+    return s.c1_source === 'custom'
+        ? await stage1ViaCustom(request.messages, { maxTokens: request.maxTokens })
+        : await stage1ViaProfile(request.messages, { includePreset: true, maxTokens: request.maxTokens });
+}
+
+function extraStripTags() {
+    return String(settings().c1_strip_tags || '')
+        .split(/[\s,]+/)
+        .map(tag => tag.replace(/[<>/]/g, '').trim())
+        .filter(tag => /^[\p{L}\p{N}_:.-]+$/u.test(tag));
+}
+
+/**
+ * ดึงคำตอบจริงออกจากผลของ Preset: เอาบล็อก <image_prompt> อันสุดท้าย
+ * ถ้าโมเดลไม่ปิดแท็ก (ถูกตัดกลางคัน) เอาตั้งแต่แท็กเปิดอันสุดท้ายถึงท้ายข้อความ
+ * ถ้าไม่มีแท็กเลย คืนทั้งก้อนให้ตัวกรองปกติจัดการ แล้วเตือนผู้ใช้
+ */
+function extractPresetAnswer(text) {
+    let out = String(text || '');
+    for (const tag of extraStripTags()) {
+        const safe = tag.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        // ไม่ใช้ \b เพราะชื่อแท็กภาษาไทย (เช่น <คิด>) ไม่นับเป็น word character
+        out = out.replace(new RegExp(`<${safe}(?=[\\s>/])[^>]*>[\\s\\S]*?<\\/${safe}\\s*>`, 'giu'), ' ');
+    }
+
+    const blocks = [...out.matchAll(new RegExp(`<${PRESET_ANSWER_TAG}\\s*>([\\s\\S]*?)<\\/${PRESET_ANSWER_TAG}\\s*>`, 'gi'))];
+    const filled = blocks.filter(match => match[1].trim());
+    if (filled.length) {
+        const last = filled[filled.length - 1];
+        const thinking = out.slice(0, last.index).trim();
+        if (thinking) { lastAnalysis = thinking; console.log(LOG, 'preset thinking', thinking); }
+        return last[1];
+    }
+
+    const openAt = out.toLowerCase().lastIndexOf(`<${PRESET_ANSWER_TAG}>`);
+    if (openAt >= 0) {
+        const thinking = out.slice(0, openAt).trim();
+        if (thinking) { lastAnalysis = thinking; console.log(LOG, 'preset thinking', thinking); }
+        return out.slice(openAt + PRESET_ANSWER_TAG.length + 2);
+    }
+
+    console.warn(LOG, `คำตอบไม่มีแท็ก <${PRESET_ANSWER_TAG}> — ใช้ทั้งคำตอบแทน`, out);
+    notify(`Preset ไม่ได้ห่อคำตอบด้วย <${PRESET_ANSWER_TAG}> — ใช้ทั้งคำตอบแทน ตรวจ prompt ก่อนส่งนะ`, 'warning');
+    return out;
 }
 
 /** Seedream วาดตาม prompt ภาษาจีนได้แม่นกว่า จึงแปลก่อนส่ง */
@@ -1351,10 +1697,18 @@ async function translatePromptToChinese(prompt) {
 }
 
 async function stage1GeneratePrompt(mode, extra) {
-    const s = settings();
+    const cot = effectiveCotMode();
     let extraText = String(extra || '');
 
-    if (s.cot_mode === 'heavy') {
+    if (presetMode() !== 'off') {
+        const result = await stage1ViaPreset(mode, extraText);
+        const answer = extractPresetAnswer(result.text);
+        const prompt = targetIsGpt() ? normaliseProse(answer) : normalizePrompt(answer);
+        assertUsablePrompt(prompt, result.raw, result.finish);
+        return prompt;
+    }
+
+    if (cot === 'heavy') {
         setProgress('analyse');
         setStatus('① รอบที่ 1 — กำลังวิเคราะห์ฉาก...');
         const analysis = await callStage1(await buildAnalysisMessages(mode, extraText));
@@ -1370,7 +1724,7 @@ async function stage1GeneratePrompt(mode, extra) {
 
     const messages = await buildStage1Messages(mode, extraText);
     const result = await callStage1(messages);
-    if (s.cot_mode === 'light') {
+    if (cot === 'light') {
         const planning = String(result.text || '').match(/<planning>([\s\S]*?)<\/planning>/i);
         if (planning) { lastAnalysis = planning[1].trim(); console.log(LOG, 'planning', lastAnalysis); }
     }
@@ -2697,8 +3051,27 @@ async function testConnection(kind) {
 async function previewPrompt() {
     const context = getContext();
     const mode = document.getElementById('pxi_tpl_mode')?.value || 'free';
-    const messages = await buildStage1Messages(mode, mergeExtra(''));
-    const text = messages.map(m => `[${m.role}]\n${m.content}`).join('\n\n');
+    let text = '';
+    let presetInfo = '';
+    if (presetMode() === 'off') {
+        const messages = await buildStage1Messages(mode, mergeExtra(''));
+        text = messages.map(m => `[${m.role}]\n${m.content}`).join('\n\n');
+    } else {
+        let request;
+        try {
+            request = await buildPresetRequest(mode, mergeExtra(''));
+        } catch (error) {
+            await showErrorPopup(error);
+            return;
+        }
+        if (request.kind === 'full') {
+            text = `[quiet prompt — ST วางไว้ท้ายสุด ต่อจาก Preset + การ์ด + lorebook + ประวัติแชท]\n${request.quietPrompt}`;
+            presetInfo = `วิ่งผ่าน ST เต็มระบบ • Preset: ${request.presetName || '-'} • ด้านล่างคือเฉพาะส่วนที่ extension ต่อท้าย`;
+        } else {
+            text = request.messages.map(m => `[${m.role}]\n${m.content}`).join('\n\n');
+            presetInfo = `ห่อด้วย Preset: ${request.presetName} • prompt ที่ดึงมา ${request.used.length} ชิ้น${request.used.length ? ` (${request.used.join(', ')})` : ''} • เพดาน ${request.maxTokens} tokens${request.note ? ` • ${request.note}` : ''}`;
+        }
+    }
     let tokens = '~' + Math.ceil(text.length / 4);
     try { if (context.getTokenCountAsync) tokens = String(await context.getTokenCountAsync(text)); } catch { /* fallback */ }
 
@@ -2711,7 +3084,14 @@ async function previewPrompt() {
     const pre = document.createElement('pre');
     pre.className = 'pxi-preview';
     pre.textContent = text;
-    root.append(title, info, pre);
+    root.append(title, info);
+    if (presetInfo) {
+        const note = document.createElement('div');
+        note.className = 'pxi-note';
+        note.textContent = presetInfo;
+        root.append(note);
+    }
+    root.append(pre);
     await context.callGenericPopup(root, context.POPUP_TYPE.TEXT, '', { wide: true, large: true, okButton: 'ปิด' });
 }
 
@@ -2796,9 +3176,17 @@ function renderDocsButtons() {
 
 function toggleSourceBlocks() {
     const s = settings();
-    document.querySelectorAll('.pxi-c1-profile').forEach(el => el.classList.toggle('pxi-hidden', s.c1_source !== 'profile'));
-    document.querySelectorAll('.pxi-c1-custom').forEach(el => el.classList.toggle('pxi-hidden', s.c1_source !== 'custom'));
-    if (s.c1_source === 'custom') updateLlmUrlModeUi();
+    const preset = presetMode();
+    // โหมด full ใช้ API หลักของ ST — แหล่ง Connection 1 ไม่ถูกใช้เลย
+    const ownSource = preset !== 'full';
+    document.querySelectorAll('.pxi-c1-source').forEach(el => el.classList.toggle('pxi-hidden', !ownSource));
+    document.querySelectorAll('.pxi-c1-profile').forEach(el => el.classList.toggle('pxi-hidden', !ownSource || s.c1_source !== 'profile'));
+    document.querySelectorAll('.pxi-c1-custom').forEach(el => el.classList.toggle('pxi-hidden', !ownSource || s.c1_source !== 'custom'));
+    document.querySelectorAll('.pxi-c1-preset-on').forEach(el => el.classList.toggle('pxi-hidden', preset === 'off'));
+    document.querySelectorAll('.pxi-c1-preset-wrap').forEach(el => el.classList.toggle('pxi-hidden', preset !== 'wrap'));
+    document.querySelectorAll('.pxi-c1-preset-full').forEach(el => el.classList.toggle('pxi-hidden', preset !== 'full'));
+    document.querySelectorAll('.pxi-c1-cot').forEach(el => el.classList.toggle('pxi-hidden', preset !== 'off'));
+    if (ownSource && s.c1_source === 'custom') updateLlmUrlModeUi();
     document.querySelectorAll('.pxi-c2-nai').forEach(el => el.classList.toggle('pxi-hidden', s.c2_source !== 'nai'));
     // GPT-Image ใช้ URL/key/timeout ชุดเดียวกับ Custom
     const usesCustomEndpoint = s.c2_source === 'custom';
@@ -2843,6 +3231,38 @@ async function populateProfiles() {
     select.value = profiles.some(p => p.id === selected) ? selected : '';
     settings().c1_profile = select.value;
     context.saveSettingsDebounced();
+}
+
+/** รายชื่อ Chat Completion preset สำหรับโหมด "ห่อด้วย Prompt Manager" */
+function populatePresetNames() {
+    const select = document.getElementById('pxi_c1_preset_name');
+    if (!select) return;
+    const s = settings();
+    const manager = ccPresetManager();
+    let names = [];
+    try { names = manager?.getAllPresets?.() || []; } catch { names = []; }
+    names = [...new Set(names.filter(Boolean))];
+    const active = activePresetName();
+    const profile = s.c1_source === 'profile' ? c1Profile() : null;
+
+    select.innerHTML = '';
+    const addOption = (value, label) => {
+        const option = document.createElement('option');
+        option.value = value;
+        option.textContent = label;
+        select.append(option);
+    };
+    addOption('', active ? `⟨Preset ที่เปิดอยู่ตอนนี้⟩ — ${active}` : '⟨Preset ที่เปิดอยู่ตอนนี้⟩');
+    addOption(PRESET_FROM_PROFILE, profile?.preset
+        ? `⟨Preset ของโปรไฟล์ Connection 1⟩ — ${profile.preset}`
+        : '⟨Preset ของโปรไฟล์ Connection 1⟩');
+    for (const name of names) addOption(name, name);
+
+    const wanted = String(s.c1_preset_name || '');
+    select.value = (wanted === PRESET_FROM_PROFILE || names.includes(wanted)) ? wanted : '';
+
+    const warning = document.getElementById('pxi_preset_warning');
+    if (warning) warning.classList.toggle('pxi-hidden', !!manager);
 }
 
 function loadTemplateEditor() {
@@ -3324,14 +3744,20 @@ function updateContextHints() {
     if (messages === 1) warnings.push('ข้อความล่าสุด = 1 จะส่งข้อความเดียวกันซ้ำสองรอบ (ทั้งใน chat และ lastMessage) — ใช้ 0 แทน');
     if (messages > 4) warnings.push(`ข้อความล่าสุด ${messages} ย้อนไปไกลเกินจำเป็น — เสี่ยงหยิบเนื้อหาเก่าที่ไม่เกี่ยวกับฉากปัจจุบัน และเพิ่มโอกาสติดฟิลเตอร์ของ Connection 1 แนะนำ 0`);
     const answerBudget = Number(s.llm_max_tokens) || 600;
+    const preset = presetMode();
+    const cot = effectiveCotMode();
     if (answerBudget < 400) warnings.push(`เพดานความยาวคำตอบ ${answerBudget} ต่ำไป — prompt ที่มีหลายตัวละครจะถูกตัดกลางคัน แนะนำ 600 ขึ้นไป`);
-    if (s.cot_mode === 'heavy' && answerBudget < 600) warnings.push('โหมด CoT หนักต้องการที่ให้รอบวิเคราะห์ด้วย — ตั้งเพดานความยาวคำตอบอย่างน้อย 600');
+    if (cot === 'heavy' && answerBudget < 600) warnings.push('โหมด CoT หนักต้องการที่ให้รอบวิเคราะห์ด้วย — ตั้งเพดานความยาวคำตอบอย่างน้อย 600');
+    const presetTokens = Number(s.c1_preset_tokens) || 0;
+    if (preset !== 'off' && presetTokens > 0 && presetTokens < 1000) warnings.push(`เพดาน tokens โหมด Preset ${presetTokens} ต่ำไป — Preset ที่มีบล็อกคิดยาว ๆ จะถูกตัดก่อนถึง <${PRESET_ANSWER_TAG}> แนะนำ 0 (ตาม Preset) หรือ 2000 ขึ้นไป`);
 
     el.textContent = '';
     const summary = document.createElement('div');
     const scopeNote = messages === 0 ? ' • อ่านเฉพาะข้อความล่าสุดข้อความเดียว' : '';
-    const cotNote = s.cot_mode === 'heavy' ? ' • CoT หนัก = ยิง 2 รอบ'
-        : s.cot_mode === 'light' ? ' • CoT เบา = เผื่อคำตอบ 1.8 เท่า' : '';
+    const cotNote = preset === 'full' ? ' • วิ่งผ่าน ST เต็มระบบ = ST ส่ง Preset + ประวัติแชทเพิ่มให้อีก (งบจริงสูงกว่านี้)'
+        : preset === 'wrap' ? ' • ห่อด้วย Preset = บวก prompt ใน Preset เพิ่ม (กด Preview เพื่อดูยอดจริง)'
+            : cot === 'heavy' ? ' • CoT หนัก = ยิง 2 รอบ'
+                : cot === 'light' ? ' • CoT เบา = เผื่อคำตอบ 1.8 เท่า' : '';
     summary.textContent = `งบจริง ≈ ${budget} ตัวอักษรจากบทสนทนา + ข้อความล่าสุดสูงสุด ${lastCap} ตัวอักษร รวมกับ template แล้วราว ${tokens} tokens${scopeNote}${cotNote}`;
     el.append(summary);
     for (const warning of warnings) {
@@ -3353,6 +3779,7 @@ function loadSettingsToUi() {
     }
     loadTemplateEditor();
     toggleSourceBlocks();
+    populatePresetNames();
     populateSizePresets();
     populateNaiModels();
     populateVibes();
@@ -3388,10 +3815,11 @@ function bindEvents() {
             else if (type === 'number') s[key] = Number(el.value);
             else s[key] = el.value;
             if (key === 'wand_button') updateWandButton();
-            if (key === 'c1_source' || key === 'c2_source') toggleSourceBlocks();
+            if (key === 'c1_source' || key === 'c2_source' || key === 'c1_preset_mode') toggleSourceBlocks();
+            if (key === 'c1_source' || key === 'c1_profile' || key === 'c1_preset_mode') populatePresetNames();
             if (key === 'c2_source') loadTemplateEditor();
             if (key === 'gpt_size' || key === 'gpt_model') updateGptSizeHint();
-            if (key.startsWith('ctx_') || key === 'llm_max_tokens' || key === 'cot_mode') updateContextHints();
+            if (key.startsWith('ctx_') || ['llm_max_tokens', 'cot_mode', 'c1_preset_mode', 'c1_preset_tokens'].includes(key)) updateContextHints();
             if (key === 'persona_mode') updatePersonaHint();
             if (['size', 'steps', 'anlas_guard', 'upscale_ratio', 'gpt_n', 'nai_model'].includes(key)) updateSizeUi();
             if (key === 'img_model') {
@@ -3467,7 +3895,8 @@ function bindEvents() {
         notify(`ตั้งขนาดเป็น ${value} แล้ว`, 'success');
     });
     document.getElementById('pxi_anlas_view')?.addEventListener('click', () => viewAnlas());
-    document.getElementById('pxi_profile_refresh')?.addEventListener('click', () => populateProfiles());
+    document.getElementById('pxi_profile_refresh')?.addEventListener('click', async () => { await populateProfiles(); populatePresetNames(); });
+    document.getElementById('pxi_preset_refresh')?.addEventListener('click', () => populatePresetNames());
     document.getElementById('pxi_persona_refresh')?.addEventListener('click', () => updatePersonaHint());
     document.getElementById('pxi_preview')?.addEventListener('click', () => previewPrompt());
     document.getElementById('pxi_docs_save_all')?.addEventListener('click', () => {
@@ -3672,6 +4101,12 @@ jQuery(async () => {
         for (const key of ['MESSAGE_SENT', 'MESSAGE_RECEIVED', 'MESSAGE_EDITED', 'MESSAGE_DELETED', 'MESSAGE_SWIPED', 'CHAT_CHANGED']) {
             const eventName = context.eventTypes?.[key];
             if (eventName) context.eventSource.on(eventName, schedulePersonaHint);
+        }
+
+        // ชื่อ Preset ที่เปิดอยู่เปลี่ยนเมื่อผู้ใช้สลับ Preset หรือโหลดโปรไฟล์ใหม่
+        for (const key of ['OAI_PRESET_CHANGED_AFTER', 'PRESET_CHANGED', 'CONNECTION_PROFILE_LOADED']) {
+            const eventName = context.eventTypes?.[key];
+            if (eventName) context.eventSource.on(eventName, () => populatePresetNames());
         }
 
         const imageSwipedEvent = context.eventTypes?.IMAGE_SWIPED;

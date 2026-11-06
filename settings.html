@@ -48,11 +48,61 @@
                     <div class="inline-drawer-icon fa-solid fa-circle-chevron-down down"></div>
                 </div>
                 <div class="inline-drawer-content">
-                    <label for="pxi_c1_source">แหล่งที่ใช้สร้าง prompt</label>
-                    <select id="pxi_c1_source" class="text_pole">
-                        <option value="profile">Connection Profile ของ SillyTavern (แนะนำ)</option>
-                        <option value="custom">Custom OpenAI-compatible (ทางเลือก)</option>
+                    <label for="pxi_c1_preset_mode">วิธีคิดก่อนตอบ / Preset ของ SillyTavern</label>
+                    <select id="pxi_c1_preset_mode" class="text_pole">
+                        <option value="off">ระบบของ extension เอง — CoT / &lt;planning&gt; (ค่าเดิม)</option>
+                        <option value="wrap">ห่อด้วย Prompt Manager — ดึง prompt ใน Preset มาครอบ แล้วยิงผ่าน Connection 1</option>
+                        <option value="full">วิ่งผ่าน ST เต็มระบบ — ใช้ API + Preset ที่เปิดอยู่ในหน้าหลัก</option>
                     </select>
+
+                    <div class="pxi-c1-preset-wrap">
+                        <label for="pxi_c1_preset_name">Preset ที่จะดึง prompt มาใช้</label>
+                        <div class="pxi-row">
+                            <select id="pxi_c1_preset_name" class="text_pole pxi-grow"></select>
+                            <div class="menu_button menu_button_icon" id="pxi_preset_refresh" title="รีเฟรชรายชื่อ Preset"><i class="fa-solid fa-rotate"></i></div>
+                        </div>
+                        <div id="pxi_preset_warning" class="pxi-note pxi-warn pxi-hidden">อ่านรายชื่อ Preset ของ Chat Completion ไม่ได้ — ยังใช้ "Preset ที่เปิดอยู่ตอนนี้" ได้ตามปกติ หรืออัปเดต SillyTavern</div>
+                        <div class="pxi-note">
+                            ดึงทุก prompt ที่<b>เปิดอยู่</b>ใน Prompt Manager ของ Preset นั้น (Main, NSFW, Jailbreak, บล็อก CoT และ prompt ที่สร้างเอง) ตามลำดับเดิม แล้ววางงานของ extension ไว้ตรงตำแหน่ง <b>Chat History</b><br>
+                            prompt ที่อยู่หลัง Chat History (post-history / jailbreak / CoT) จะตามหลังงานของ extension เหมือนในแชทจริง • prompt แบบ in-chat @depth ถูกแทรกรอบข้อความของ extension<br>
+                            marker การ์ด / persona / lorebook / ตัวอย่างบทสนทนา ถูกข้าม เพราะ extension แนบข้อมูลพวกนี้เองตามหมวด ② อยู่แล้ว • prompt ที่ตั้ง Triggers ไว้จะถูกใช้เฉพาะเมื่อติ๊ก <code>Quiet</code><br>
+                            ถ้าใช้ Connection Profile ค่า sampler (temperature ฯลฯ) มาจาก Preset ที่ผูกกับโปรไฟล์นั้น • Custom OpenAI-compatible ใช้ Temperature ในหมวดนี้
+                        </div>
+                    </div>
+
+                    <div class="pxi-c1-preset-full">
+                        <div class="pxi-note">
+                            ให้ SillyTavern ประกอบ prompt เองทั้งชุดเหมือนตอนกดส่งแชท — Preset + Prompt Manager + การ์ด + persona + lorebook + Author's Note + ประวัติแชท แล้วต่องานของ extension ไว้ท้ายสุด (quiet prompt)<br>
+                            ใช้ <b>API / โมเดลที่เชื่อมต่ออยู่ในหน้าหลัก</b> ไม่ใช้แหล่งของ Connection 1 • ใกล้เคียงการคุยปกติที่สุด แต่เปลือง tokens ที่สุดเพราะส่งประวัติแชททั้งก้อน<br>
+                            ถ้าแชทหลักกำลังเจนข้อความอยู่ ให้รอให้เสร็จก่อนค่อยกดสร้างรูป
+                        </div>
+                    </div>
+
+                    <div class="pxi-c1-preset-on">
+                        <div class="pxi-grid2">
+                            <div>
+                                <label for="pxi_c1_preset_tokens">เพดาน tokens โหมด Preset</label>
+                                <input id="pxi_c1_preset_tokens" class="text_pole" type="number" min="0" max="64000" step="100">
+                            </div>
+                            <div>
+                                <label for="pxi_c1_strip_tags">แท็กที่ตัดทิ้งเพิ่ม</label>
+                                <input id="pxi_c1_strip_tags" class="text_pole" type="text" placeholder="เช่น cot, status, info">
+                            </div>
+                        </div>
+                        <div class="pxi-note">
+                            ระบบ &lt;planning&gt; และ CoT ของ extension <b>ถูกปิด</b> ในโหมดนี้ — ให้ Preset คิดตามรูปแบบของมันเอง แล้วสั่งให้ห่อคำตอบจริงไว้ใน <code>&lt;image_prompt&gt;…&lt;/image_prompt&gt;</code> ระบบจะดึงเฉพาะในแท็กนั้นไปใช้ ที่เหลือทิ้งหมด (บล็อกคิดของ Preset ดูได้ใน console)<br>
+                            เพดาน tokens: <b>0</b> = ใช้ Max Response Length ของ Preset • Preset ที่คิดยาวควรเผื่อ 2000 ขึ้นไป ไม่งั้นจะถูกตัดก่อนถึงคำตอบ<br>
+                            แท็กที่ตัดทิ้งเพิ่ม: ใช้กับ Preset ที่แปะบล็อกของตัวเองมาด้วย เช่น status panel — ชื่อแท็กคั่นด้วยคอมมา ไม่ต้องใส่ &lt; &gt; (<code>think</code> <code>thinking</code> <code>planning</code> ถูกตัดให้อยู่แล้ว)
+                        </div>
+                    </div>
+
+                    <div class="pxi-c1-source">
+                        <label for="pxi_c1_source">แหล่งที่ใช้สร้าง prompt</label>
+                        <select id="pxi_c1_source" class="text_pole">
+                            <option value="profile">Connection Profile ของ SillyTavern (แนะนำ)</option>
+                            <option value="custom">Custom OpenAI-compatible (ทางเลือก)</option>
+                        </select>
+                    </div>
 
                     <div class="pxi-c1-profile">
                         <label for="pxi_c1_profile">โปรไฟล์</label>
@@ -132,7 +182,7 @@
                             <label for="pxi_llm_max_tokens">เพดานความยาวคำตอบ (tokens)</label>
                             <input id="pxi_llm_max_tokens" class="text_pole" type="number" min="16" max="8192" step="50">
                         </div>
-                        <div>
+                        <div class="pxi-c1-cot">
                             <label for="pxi_cot_mode">โหมดคิดก่อนตอบ (CoT)</label>
                             <select id="pxi_cot_mode" class="text_pole">
                                 <option value="off">ปิด — คายแท็กเลย (เร็วสุด)</option>
@@ -140,12 +190,16 @@
                                 <option value="heavy">หนัก — วิเคราะห์ฉากก่อน แล้วค่อยเขียนแท็ก (ยิง 2 รอบ)</option>
                             </select>
                         </div>
+                        <div class="pxi-c1-preset-on">
+                            <label>โหมดคิดก่อนตอบ (CoT)</label>
+                            <div class="pxi-note">ปิดอยู่ — Preset จัดการการคิดเอง</div>
+                        </div>
                     </div>
                     <label class="checkbox_label" for="pxi_llm_can_search">
                         <input id="pxi_llm_can_search" type="checkbox">
                         <span>โมเดลนี้ค้นเว็บได้ <small class="pxi-hint pxi-inline">(เช่น *-search / grounding) — สั่งให้ค้นแท็กตัวละครก่อนเดา และตัด citation ออกให้</small></span>
                     </label>
-                    <div class="pxi-note">
+                    <div class="pxi-note pxi-c1-cot">
                         โหมด CoT ทั้งสองแบบมีขั้นตอน "หาแท็กตัวละคร" อยู่ในตัว — บังคับให้โมเดลระบุชื่อผลงานต้นทาง แล้วประเมินความมั่นใจก่อนจะใส่แท็ก ถ้ารู้จักแค่ซีรีส์ก็ใส่แท็กซีรีส์อย่างเดียวแทนการเดา<br>
                         เพดานความยาวคำตอบไม่ใช่ปริมาณที่จะถูกใช้จริง ตอบสั้นก็จ่ายสั้น แต่ถ้าตั้งต่ำเกินแท็กจะถูกตัดกลางคัน — ฉาก 3-4 ตัวละครควรอยู่ที่ 600 ขึ้นไป<br>
                         โหมด CoT เบาจะเผื่อโควตาให้อัตโนมัติ 1.8 เท่า • โหมดหนักยิง Connection 1 สองรอบ (ช้าและเปลืองกว่า แต่แม่นที่สุดกับฉากหลายตัวละคร) • ผลวิเคราะห์ดูได้ใน console

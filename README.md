@@ -37,6 +37,26 @@ Connection Profile ของ ST                NovelAI Official
 
 ผลวิเคราะห์ทั้งสองโหมดพิมพ์ลง console ตรวจย้อนได้ว่าโมเดลเข้าใจฉากถูกไหม
 
+## ใช้ Preset / Prompt Manager ของ SillyTavern (แทนระบบ planning)
+ตัวเลือกแรกของหมวด ① **"วิธีคิดก่อนตอบ / Preset ของ SillyTavern"** ให้ Connection 1 วิ่งผ่าน Preset ที่ใช้คุยอยู่ได้ — เหมาะกับคนที่มี Preset ที่มี jailbreak / บล็อก CoT ของตัวเองอยู่แล้ว
+
+| โหมด | ทำอะไร | ยิงไปที่ |
+|---|---|---|
+| ระบบของ extension เอง (ค่าเดิม) | system template + CoT / `<planning>` ของ extension | แหล่งของ Connection 1 |
+| ห่อด้วย Prompt Manager | ดึงทุก prompt ที่เปิดอยู่ใน Preset ที่เลือก (Main, NSFW, Jailbreak, CoT, prompt ที่สร้างเอง) ตามลำดับเดิม แล้ววางงานของ extension ไว้ตรงตำแหน่ง Chat History | แหล่งของ Connection 1 (Profile หรือ Custom) |
+| วิ่งผ่าน ST เต็มระบบ | ให้ ST ประกอบ prompt เองทั้งชุดเหมือนกดส่งแชท (Preset + การ์ด + persona + lorebook + Author's Note + ประวัติแชท) แล้วต่องานของ extension ไว้ท้ายสุดเป็น quiet prompt | API / โมเดลที่เชื่อมต่ออยู่ในหน้าหลักของ ST |
+
+รายละเอียด
+- ทั้งสองโหมด Preset **ปิด** CoT / `<planning>` ของ extension ให้ Preset คิดตามรูปแบบของมันเอง แล้วสั่งปิดท้ายให้ห่อคำตอบจริงไว้ใน `<image_prompt>…</image_prompt>` — ระบบดึงเฉพาะบล็อกนั้นไปใช้ (เอาบล็อกสุดท้าย, ถ้าถูกตัดก่อนปิดแท็กก็เอาตั้งแต่แท็กเปิดจนจบ) ส่วนบล็อกคิดของ Preset พิมพ์ลง console
+- ถ้าโมเดลไม่ยอมใส่ `<image_prompt>` ระบบจะใช้ทั้งคำตอบผ่านตัวกรองเดิมแล้วเด้งเตือนให้ตรวจก่อนส่ง
+- **เลือก Preset** (โหมดห่อ): Preset ที่เปิดอยู่ตอนนี้ (อ่านค่าสด ๆ รวมที่ยังไม่ได้เซฟ), Preset ที่ผูกกับโปรไฟล์ของ Connection 1, หรือเลือกชื่อ Preset เอง — ต้องเป็น Preset ของ Chat Completion
+- prompt หลัง Chat History (post-history / jailbreak / CoT) ตามหลังงานของ extension เหมือนในแชทจริง • prompt แบบ in-chat @depth ถูกแทรกรอบข้อความของ extension • marker การ์ด / persona / lorebook / ตัวอย่างบทสนทนาถูกข้ามเพราะ extension แนบเองตามหมวด ② • prompt ที่ตั้ง Triggers จะถูกใช้เฉพาะเมื่อติ๊ก Quiet • macro อย่าง `{{char}}` `{{user}}` ถูกแทนค่าตามปกติ
+- โหมดห่อ + Connection Profile ใช้ค่า sampler จาก Preset ที่ผูกกับโปรไฟล์ • Custom OpenAI-compatible ใช้ Temperature ของหมวด ①
+- **เพดาน tokens โหมด Preset**: `0` = ใช้ Max Response Length ของ Preset — Preset ที่คิดยาวควรเผื่อ 2000 ขึ้นไป
+- **แท็กที่ตัดทิ้งเพิ่ม**: สำหรับ Preset ที่แปะบล็อกของตัวเองมาด้วย เช่น `status, info` (ชื่อแท็กภาษาไทยก็ได้)
+- ปุ่ม **Preview** แสดงข้อความที่ถูกห่อแล้วจริง พร้อมรายชื่อ prompt ที่ดึงมาจาก Preset
+- โหมดเต็มระบบ: ปุ่ม Stop สั่งหยุดผ่าน ST ได้ • ถ้าแชทหลักกำลังเจนข้อความอยู่ให้รอเสร็จก่อน • งานแปลจีนของ Seedream ใช้ API หลักแบบไม่ผ่าน Preset
+
 ## Prompt Templates
 หมวด ② แก้ได้เฉพาะ **System** ของแต่ละโหมด (พร้อมปุ่มรีเซ็ตทีละโหมด/ทั้งหมด)
 ส่วน user message ระบบประกอบให้เองตามโหมด จึงไม่ต้องดูแล
